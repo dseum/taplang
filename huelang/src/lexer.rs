@@ -1,11 +1,10 @@
 use chumsky::prelude::*;
 
-use crate::ast::Span;
+// use crate::ast::Spanned;
 
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub enum Token {
     Nat(u64),
-    Op(String),
     Var(String),
     Let,
     Mut,
@@ -75,41 +74,49 @@ pub enum Token {
 //     }
 // }
 
-pub fn lex<'a>() -> impl Parser<&'a str, Vec<(Token, Span)>, Simple<&'a str>> + Clone {
-    let integer = text::int(10).map(|n: String| Token::Nat(n.parse().unwrap()));
+#[derive(Debug, PartialEq)]
+pub struct Spanned<T>(pub T, pub SimpleSpan<usize>);
+
+#[allow(clippy::let_and_return)]
+fn lex<'src>() -> impl Parser<'src, &'src str, Vec<Spanned<Token>>> + Clone {
+    let nat = text::int(10).map(|n: &'src str| Token::Nat(n.parse().unwrap()));
 
     // let newline = just("\n").or(just("\r\n")).to(Token::Eol);
+    let op = choice((
+        just("==").to(Token::Eq),
+        just("<").to(Token::Lt),
+        just("+").to(Token::Plus),
+        just("-").to(Token::Minus),
+        just("*").to(Token::Mult),
+        just("/").to(Token::Div),
+        just("!").to(Token::Bang),
+        just("&&").to(Token::And),
+        just(";").to(Token::Semicolon),
+    ));
 
-    let op = one_of("=+-*/()&;<>[],.")
-        .repeated()
-        .exactly(1)
-        .collect::<String>()
-        .map(Token::Op);
-
-    let ident = text::ident().map(|ident: String| match ident.as_str() {
+    let keyword_or_ident = text::ident().map(|ident: &'src str| match ident {
         "let" => Token::Let,
         "mut" => Token::Mut,
-        "in" => Token::In,
-        "unit" => Token::Unit,
         "if" => Token::If,
         "then" => Token::Then,
         "else" => Token::Else,
         "true" => Token::True,
         "false" => Token::False,
-        _ => Token::Var(ident),
+        "alloc" => Token::Alloc,
+        "free" => Token::Free,
+        "while" => Token::While,
+        "do" => Token::Do,
+        _ => Token::Var(ident.to_string()),
     });
-
-    let token = integer
-        // .or(newline)
-        .or(op)
-        .or(ident)
-        .recover_with(skip_then_retry_until([]));
-
     let whitespace = just(" ").or(just("\t")).or(just("\n").or(just("\r\n")));
 
-    token
-        .map_with_span(|tok, span| (tok, span))
-        .padded_by(whitespace.repeated())
+    choice((nat, op, keyword_or_ident))
+        .map_with(|tok, e| Spanned(tok, e.span()))
+        // Skip optional whitespace around tokens
+        .padded_by(whitespace)
+        // Parse zero or more tokens
         .repeated()
+        .collect()
+        // End of input
         .then_ignore(end())
 }

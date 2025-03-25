@@ -1,7 +1,7 @@
 //! This is the parser and interpreter for the 'Foo' language. See `tutorial.md` in the repository's root to learn
 //! about it.
 mod ast;
-// mod lexer;
+mod lexer;
 mod parser;
 // mod eval;
 use chumsky::prelude::*;

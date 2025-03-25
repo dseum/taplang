@@ -1,3 +1,7 @@
+use chumsky::span::SimpleSpan;
+
+#[derive(Debug, PartialEq)]
+pub struct Spanned<T>(pub T, pub SimpleSpan<usize>);
 
 #[derive(Debug, Clone)]
 pub enum Lhs<'src> {
