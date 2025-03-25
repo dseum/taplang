@@ -133,7 +133,7 @@ where
             arith_parser()
                 .then_ignore(op(Token::LessThan))
                 .then(arith_parser())
-                .map(|(a1, a2)| BoolExpr::Eq(Box::new(a1), Box::new(a2))),
+                .map(|(a1, a2)| BoolExpr::Lt(Box::new(a1), Box::new(a2))),
         ));
 
         let unary = op(Token::Bang)

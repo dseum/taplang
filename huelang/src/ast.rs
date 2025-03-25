@@ -35,7 +35,7 @@ pub enum Type {
     },
     Loc(Box<Self>),
     Prod(Vec<Self>),
-    CustomType(String),
+    // CustomType(String),
 }
 #[derive(Debug, Clone)]
 pub enum Expr {
