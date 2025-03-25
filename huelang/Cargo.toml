@@ -4,5 +4,7 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
+ariadne = "0.5.1"
 chumsky = "0.10.0"
+logos = "0.15.0"
 pest = "2.7.15"

@@ -1,64 +1,61 @@
-use chumsky::span::SimpleSpan;
-
-#[derive(Debug, PartialEq)]
-pub struct Spanned<T>(pub T, pub SimpleSpan<usize>);
 
 #[derive(Debug, Clone)]
-pub enum Lhs<'src> {
+pub enum Lhs {
     Deref(Box<Self>),
-    Var(&'src str),
+    Var(String),
 }
 #[derive(Debug, Clone)]
-pub enum BoolExpr<'src> {
+pub enum BoolExpr {
     True,
     False,
-    Lvalue(Box<Lhs<'src>>),
+    Lvalue(Box<Lhs>),
     Bang(Box<Self>),
     And(Box<Self>, Box<Self>),
-    Eq(Box<ArithExpr<'src>>, Box<ArithExpr<'src>>),
-    Lt(Box<ArithExpr<'src>>, Box<ArithExpr<'src>>),
+    Eq(Box<ArithExpr>, Box<ArithExpr>),
+    Lt(Box<ArithExpr>, Box<ArithExpr>),
 }
 #[derive(Debug, Clone)]
-pub enum ArithExpr<'src> {
-    Int(i64),
-    Lvalue(Box<Lhs<'src>>),
+pub enum ArithExpr {
+    Nat(isize),
+    Lvalue(Box<Lhs>),
     Neg(Box<Self>),
     Plus(Box<Self>, Box<Self>),
     Minus(Box<Self>, Box<Self>),
     Mult(Box<Self>, Box<Self>),
     Div(Box<Self>, Box<Self>),
-    Sizeof(Box<Type<'src>>),
+    Sizeof(Box<Type>),
 }
 #[derive(Debug, Clone)]
-pub enum Type<'src> {
+pub enum Type {
     Int,
     Bool,
     Ref {
         mutable: bool,
-        inner_type: Box<Type<'src>>,
+        inner_type: Box<Self>,
     },
-    CustomType(&'src str),
+    Loc(Box<Self>),
+    Prod(Vec<Self>),
+    CustomType(String),
 }
 #[derive(Debug, Clone)]
-pub enum Expr<'src> {
-    Lvalue(Box<Lhs<'src>>),
-    Bool(Box<BoolExpr<'src>>),
-    Int(Box<ArithExpr<'src>>),
-    ImmutRef(&'src str),
-    MutRef(&'src str),
+pub enum Expr {
+    Lvalue(Box<Lhs>),
+    Bool(Box<BoolExpr>),
+    Int(Box<ArithExpr>),
+    ImmutRef(String),
+    MutRef(String),
     Tuple(Vec<Self>),
 }
 #[derive(Debug, Clone)]
-pub enum Cmd<'src> {
+pub enum Cmd {
     Skip,
-    Assign(Box<Lhs<'src>>, Box<Expr<'src>>),
+    Assign(Box<Lhs>, Box<Expr>),
     Sequence(Box<Self>, Box<Self>),
-    Print(Box<Expr<'src>>),
-    Let(&'src str, Box<Expr<'src>>),
-    LetMut(&'src str, Box<Expr<'src>>),
-    LetAlloc(&'src str, Box<ArithExpr<'src>>),
-    LetMutAlloc(&'src str, Box<ArithExpr<'src>>),
-    Free(Box<Lhs<'src>>),
-    While(Box<BoolExpr<'src>>, Box<Self>),
-    If(Box<BoolExpr<'src>>, Box<Self>, Box<Self>),
+    Let(String, Box<Type>, Box<Expr>),
+    LetMut(String, Box<Type>, Box<Expr>),
+    LetAlloc(String, Box<Type>, Box<ArithExpr>),
+    LetMutAlloc(String, Box<Type>, Box<ArithExpr>),
+    Free(Box<Lhs>),
+    While(Box<BoolExpr>, Box<Self>),
+    If(Box<BoolExpr>, Box<Self>, Box<Self>),
 }
