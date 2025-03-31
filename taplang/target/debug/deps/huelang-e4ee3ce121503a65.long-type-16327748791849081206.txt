@@ -1,1 +1,0 @@
-Or<Or<Choice<(To<Just<char, _, _>, char, BoolExpr<'_>>, To<Just<char, _, _>, char, BoolExpr<'_>>)>, DelimitedBy<Recursive<dyn chumsky::Parser<'_, _, BoolExpr<'_>, _>>, Just<char, _, _>, Just<char, _, _>, char, char>>, Then<Just<&str, _, _>, Recursive<dyn chumsky::Parser<'_, _, BoolExpr<'_>, _>>, &str, BoolExpr<'_>, _>>

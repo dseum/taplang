@@ -1,1 +1,0 @@
-To<impl chumsky::Parser<'_, &str, Lhs<'_>>, Lhs<'_>, fn(Box<Lhs<'_>>) -> BoolExpr<'_> {BoolExpr::<'_>::Lvalue}>

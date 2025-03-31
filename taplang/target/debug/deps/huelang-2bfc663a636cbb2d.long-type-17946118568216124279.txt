@@ -1,1 +1,0 @@
-PaddedBy<Just<lexer::Token, I, chumsky::extra::Full<chumsky::error::Rich<'_, lexer::Token>, (), ()>>, Ignored<Repeated<Just<lexer::Token, I, chumsky::extra::Full<chumsky::error::Rich<'_, lexer::Token>, (), ()>>, lexer::Token, I, chumsky::extra::Full<chumsky::error::Rich<'_, lexer::Token>, (), ()>>, ()>, ()>

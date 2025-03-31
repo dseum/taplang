@@ -1,1 +1,0 @@
-To<IgnoreThen<Padded<Just<char, _, _>>, chumsky::combinator::Map<Padded<impl chumsky::Parser<'_, _, <_ as SliceInput<'_>>::Slice, _> + Copy>, &str, fn(&str) -> Lhs<'_> {Lhs::<'_>::Var}>, char, _>, Lhs<'_>, fn(&str) -> Expr<'_> {Expr::<'_>::ImmutRef}>

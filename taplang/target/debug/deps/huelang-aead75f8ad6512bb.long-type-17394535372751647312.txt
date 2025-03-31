@@ -1,3 +1,0 @@
-Select<{closure@src/parser.rs:30:24: 30:44}, lexer::Token, ast::Lhs, chumsky::error::Simple<'src, lexer::Token>>
-Foldr<{closure@src/parser.rs:36:23: 36:37}, Repeated<Just<lexer::Token, lexer::Token, chumsky::error::Simple<'src, lexer::Token>>, lexer::Token, lexer::Token, chumsky::error::Simple<'src, lexer::Token>>, Select<{closure@src/parser.rs:30:24: 30:44}, lexer::Token, ast::Lhs, chumsky::error::Simple<'src, lexer::Token>>, lexer::Token, chumsky::error::Simple<'src, lexer::Token>>
-Foldr<{closure@src/parser.rs:36:23: 36:37}, Repeated<Just<lexer::Token, _, _>, lexer::Token, _, _>, Select<{closure@src/parser.rs:30:24: 30:44}, _, ast::Lhs, _>, lexer::Token, _>

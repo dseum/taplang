@@ -1,1 +1,0 @@
-chumsky::combinator::Map<impl chumsky::Parser<'_, &str, <&str as SliceInput<'_>>::Slice> + Copy, String, {closure@src/lexer.rs:80:33: 80:44}>

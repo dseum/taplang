@@ -1,1 +1,0 @@
-Choice<(To<Just<&str, Vec<Spanned<lexer::Token>>, chumsky::extra::Full<EmptyErr, (), ()>>, &str, ast::BoolExpr>, To<Just<&str, Vec<Spanned<lexer::Token>>, chumsky::extra::Full<EmptyErr, (), ()>>, &str, ast::BoolExpr>)>

@@ -1,1 +1,0 @@
-chumsky::combinator::Map<impl chumsky::Parser<'_, Vec<Spanned<lexer::Token>>, ast::Lhs> + Clone, ast::Lhs, {closure@src/parser.rs:57:30: 57:35}>

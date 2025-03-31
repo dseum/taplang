@@ -1,2 +1,0 @@
-Foldr<{closure@src/parser.rs:38:23: 38:33}, Repeated<Padded<Just<lexer::Token, Spanned<lexer::Token>, chumsky::extra::Full<EmptyErr, (), ()>>>, lexer::Token, Spanned<lexer::Token>, chumsky::extra::Full<EmptyErr, (), ()>>, Just<fn(String) -> lexer::Token {lexer::Token::Var}, Spanned<lexer::Token>, chumsky::extra::Full<EmptyErr, (), ()>>, lexer::Token, chumsky::extra::Full<EmptyErr, (), ()>>
-Foldr<{closure@src/parser.rs:38:23: 38:33}, Repeated<Padded<Just<lexer::Token, _, _>>, lexer::Token, _, _>, Just<fn(String) -> lexer::Token {lexer::Token::Var}, _, _>, lexer::Token, _>

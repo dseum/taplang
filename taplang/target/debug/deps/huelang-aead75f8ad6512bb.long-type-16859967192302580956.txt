@@ -1,1 +1,0 @@
-chumsky::combinator::Map<IgnoreThen<Padded<Just<&str, &str, chumsky::extra::Full<EmptyErr, (), ()>>>, impl chumsky::Parser<'_, &str, Type<'_>> + Clone, &str, chumsky::extra::Full<EmptyErr, (), ()>>, Type<'_>, {closure@src/parser.rs:238:58: 238:61}>

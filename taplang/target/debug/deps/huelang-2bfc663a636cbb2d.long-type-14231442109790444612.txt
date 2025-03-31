@@ -1,2 +1,0 @@
-MappedInput<lexer::Token, chumsky::span::SimpleSpan, Stream<std::iter::Map<SpannedIter<'_, lexer::Token>, {closure@src/main.rs:25:14: 25:27}>>, {closure@src/main.rs:36:37: 36:53}>
-MappedInput<lexer::Token, span::SimpleSpan, Stream<iter::adapters::map::Map<SpannedIter<'_, lexer::Token>, {closure@src/main.rs:25:14: 25:27}>>, {closure@src/main.rs:36:37: 36:53}>

@@ -1,1 +1,0 @@
-chumsky::combinator::Map<impl chumsky::Parser<'_, &str, Lhs<'_>>, Lhs<'_>, {closure@src/parser.rs:102:30: 102:35}>

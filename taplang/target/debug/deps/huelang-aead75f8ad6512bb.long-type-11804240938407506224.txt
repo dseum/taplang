@@ -1,1 +1,0 @@
-Or<Choice<(To<Just<&[u8; 4], _, _>, &[u8; 4], BoolExpr>, To<Just<&[u8; 5], _, _>, &[u8; 5], BoolExpr>)>, To<impl chumsky::Parser<'_, IoInput<File>, Lhs, _>, Lhs, fn(_) -> _>>

@@ -1,1 +1,0 @@
-Then<impl chumsky::Parser<'_, &str, Lhs<'_>>, BoolExpr<'_>, Lhs<'_>, _, chumsky::extra::Full<EmptyErr, (), ()>>

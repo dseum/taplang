@@ -1,1 +1,0 @@
-impl chumsky::Parser<'_, _, ArithExpr, chumsky::extra::Full<chumsky::error::Rich<'_, lexer::Token>, (), ()>> + Clone

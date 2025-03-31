@@ -1,1 +1,0 @@
-chumsky::recursive::Recursive<dyn chumsky::Parser<'_, I, Expr, chumsky::extra::Full<chumsky::error::Rich<'_, lexer::Token>, (), ()>>>

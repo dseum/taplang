@@ -1,1 +1,0 @@
-ThenIgnore<IgnoreThen<IgnoreThen<Just<lexer::Token, _, _>, Just<lexer::Token, _, _>, lexer::Token, _>, Or<To<Just<lexer::Token, _, _>, lexer::Token, bool>, To<Just<lexer::Token, _, _>, lexer::Token, bool>>, lexer::Token, _>, lexer::Token, _, _>

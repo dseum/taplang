@@ -1,1 +1,0 @@
-chumsky::combinator::Filter<chumsky::primitive::Any<_, _>, for<'a> fn(&'a u8) -> bool {core::num::<impl u8>::is_ascii_alphabetic}>

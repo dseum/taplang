@@ -1,3 +1,0 @@
-Ignored<OneOf<&str, I, chumsky::extra::Full<chumsky::error::Rich<'src, lexer::Token>, (), ()>>, lexer::Token>
-SkipThenRetryUntil<Ignored<chumsky::primitive::Any<I, chumsky::extra::Full<chumsky::error::Rich<'src, lexer::Token>, (), ()>>, lexer::Token>, Ignored<OneOf<&str, I, chumsky::extra::Full<chumsky::error::Rich<'src, lexer::Token>, (), ()>>, lexer::Token>>
-RecoverWith<Padded<Just<char, I, chumsky::extra::Full<chumsky::error::Rich<'src, lexer::Token>, (), ()>>>, SkipThenRetryUntil<Ignored<chumsky::primitive::Any<I, chumsky::extra::Full<chumsky::error::Rich<'src, lexer::Token>, (), ()>>, lexer::Token>, Ignored<OneOf<&str, I, chumsky::extra::Full<chumsky::error::Rich<'src, lexer::Token>, (), ()>>, lexer::Token>>>

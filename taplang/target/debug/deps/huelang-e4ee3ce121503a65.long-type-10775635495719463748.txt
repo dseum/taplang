@@ -1,1 +1,0 @@
-Repeated<Padded<Just<char, &[parser::Token], chumsky::extra::Full<EmptyErr, (), ()>>>, char, &[parser::Token], chumsky::extra::Full<EmptyErr, (), ()>>

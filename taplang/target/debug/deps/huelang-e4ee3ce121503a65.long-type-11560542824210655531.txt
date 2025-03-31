@@ -1,1 +1,0 @@
-Choice<(To<Just<&str, _, _>, &str, parser::Type<'_>>, To<Just<&str, _, _>, &str, parser::Type<'_>>, Then<Just<&str, _, _>, Or<Just<&str, _, _>, Just<&str, _, _>>, &str, &str, _>)>

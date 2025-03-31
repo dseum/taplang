@@ -1,1 +1,0 @@
-Just<fn(String) -> lexer::Token {lexer::Token::Var}, Vec<Spanned<lexer::Token>>, chumsky::extra::Full<EmptyErr, (), ()>>

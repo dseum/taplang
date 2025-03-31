@@ -1,1 +1,0 @@
-chumsky::combinator::Map<Padded<impl chumsky::Parser<'_, &str, <&str as SliceInput<'_>>::Slice> + Copy>, String, fn(String) -> ast::Expr {ast::Expr::MutRef}>

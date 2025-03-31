@@ -1,1 +1,0 @@
-DelimitedBy<impl chumsky::Parser<'_, _, Expr, chumsky::extra::Full<chumsky::error::Rich<'_, lexer::Token>, (), ()>> + Clone, lexer::Token, lexer::Token, _, _>

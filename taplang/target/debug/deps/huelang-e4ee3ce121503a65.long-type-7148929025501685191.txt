@@ -1,1 +1,0 @@
-IgnoreThen<Just<parser::Token, parser::Token, {type error}>, Recursive<dyn chumsky::Parser<'_, parser::Token, {type error}, {type error}>>, parser::Token, {type error}>

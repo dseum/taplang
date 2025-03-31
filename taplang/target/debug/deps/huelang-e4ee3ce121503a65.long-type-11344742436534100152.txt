@@ -1,1 +1,0 @@
-Select<{closure@src/parser.rs:30:24: 30:44}, lexer::Token, ast::Lhs, chumsky::error::Simple<'_, lexer::Token>>

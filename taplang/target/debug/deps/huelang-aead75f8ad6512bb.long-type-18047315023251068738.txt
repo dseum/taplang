@@ -1,1 +1,0 @@
-chumsky::combinator::Map<Padded<impl chumsky::Parser<'_, &'src str, <&'src str as SliceInput<'_>>::Slice> + Copy>, String, fn(String) -> ast::Lhs {ast::Lhs::Var}>

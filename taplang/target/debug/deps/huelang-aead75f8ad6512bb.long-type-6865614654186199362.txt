@@ -1,2 +1,0 @@
-Padded<impl chumsky::Parser<'_, &'a [parser::Token], <&'a [parser::Token] as SliceInput<'_>>::Slice> + std::marker::Copy>
-chumsky::combinator::Map<Padded<impl chumsky::Parser<'_, &'a [parser::Token], <&'a [parser::Token] as SliceInput<'_>>::Slice> + std::marker::Copy>, String, fn(String) -> Lhs {Lhs::Var}>

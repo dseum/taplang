@@ -1,1 +1,0 @@
-Or<Choice<(To<Just<&str, Vec<Spanned<lexer::Token>>, chumsky::extra::Full<EmptyErr, (), ()>>, &str, ast::BoolExpr>, To<Just<&str, Vec<Spanned<lexer::Token>>, chumsky::extra::Full<EmptyErr, (), ()>>, &str, ast::BoolExpr>)>, chumsky::combinator::Map<impl chumsky::Parser<'_, Vec<Spanned<lexer::Token>>, ast::Lhs> + Clone, ast::Lhs, {closure@src/parser.rs:95:30: 95:35}>>

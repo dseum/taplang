@@ -1,1 +1,0 @@
-Repeated<Just<lexer::Token, lexer::Token, chumsky::error::Simple<'_, lexer::Token>>, lexer::Token, lexer::Token, chumsky::error::Simple<'_, lexer::Token>>

@@ -1,4 +1,0 @@
-Padded<Just<lexer::Token, Vec<Spanned<lexer::Token>>, chumsky::extra::Full<EmptyErr, (), ()>>>
-Repeated<Padded<Just<lexer::Token, Vec<Spanned<lexer::Token>>, chumsky::extra::Full<EmptyErr, (), ()>>>, lexer::Token, Vec<Spanned<lexer::Token>>, chumsky::extra::Full<EmptyErr, (), ()>>
-Foldr<{closure@src/parser.rs:34:23: 34:33}, Repeated<Padded<Just<lexer::Token, Vec<Spanned<lexer::Token>>, chumsky::extra::Full<EmptyErr, (), ()>>>, lexer::Token, Vec<Spanned<lexer::Token>>, chumsky::extra::Full<EmptyErr, (), ()>>, Just<lexer::Token, Vec<Spanned<lexer::Token>>, chumsky::extra::Full<EmptyErr, (), ()>>, lexer::Token, chumsky::extra::Full<EmptyErr, (), ()>>
-Foldr<{closure@src/parser.rs:34:23: 34:33}, Repeated<Padded<Just<lexer::Token, _, _>>, lexer::Token, _, _>, Just<lexer::Token, _, _>, lexer::Token, _>
