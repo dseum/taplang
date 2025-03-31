@@ -1,5 +1,4 @@
 use logos::Logos;
-use std::fmt::{self, write};
 
 /* ANCHOR: tokens */
 #[derive(Logos, Debug, PartialEq, Eq, Hash, Clone)]
@@ -82,8 +81,8 @@ pub enum Token {
     Error,
 }
 
-impl fmt::Display for Token {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+impl std::fmt::Display for Token {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         match self {
             Self::Nat(i) => write!(f, "{}", i),
             Self::Var(s) => write!(f, "{}", s),
@@ -122,7 +121,7 @@ impl fmt::Display for Token {
             Self::Comma => write!(f, ","),
             Self::Sizeof => write!(f, "sizeof"),
             Self::Amp => write!(f, "&"),
-            Self::Skip => write!(f, "skip")
+            Self::Skip => write!(f, "skip"),
         }
     }
 }

@@ -1,16 +1,12 @@
-//! This is the parser and interpreter for the 'Foo' language. See `tutorial.md` in the repository's root to learn
-//! about it.
 mod ast;
 mod lexer;
 mod parser;
 // mod eval;
+// use ariadne::{Color, Label, Report, ReportKind, Source};
+use chumsky::input::Stream;
 use chumsky::prelude::*;
 use lexer::Token;
 use logos::Logos;
-// use eval::eval;
-use ariadne::{Color, Label, Report, ReportKind, Source};
-use chumsky::input::Stream;
-use std::fmt;
 use parser::*;
 
 fn main() {
@@ -45,12 +41,11 @@ fn main() {
             // },
             println!("output:\n");
             println!("{:?}", sexpr)
-
         }
         // If parsing was unsuccessful, generate a nice user-friendly diagnostic with ariadne. You could also use
         // codespan, or whatever other diagnostic library you care about. You could even just display-print the errors
         // with Rust's built-in `Display` trait, but it's a little crude
-        Err(errs) => {
+        Err(_errs) => {
             // for err in errs {
             //     Report::build(ReportKind::Error, (), err.span().start)
             //         .with_code(3)
@@ -64,7 +59,7 @@ fn main() {
             //         .eprint(Source::from(SRC))
             //         .unwrap();
             // }
-            panic!("error")
+            panic!("error");
         }
     }
 }

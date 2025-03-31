@@ -1,6 +1,5 @@
 use crate::ast::{ArithExpr, BoolExpr, Cmd, Expr, Lhs, Type};
 use crate::lexer::Token;
-// use ariadne::{Color, Label, Report, ReportKind, Source};
 use chumsky::{input::ValueInput, prelude::*};
 
 pub fn lhs_parser<'src, I>() -> impl Parser<'src, I, Lhs, extra::Err<Rich<'src, Token>>> + Clone
@@ -247,7 +246,7 @@ where
                     .then_ignore(op(Token::Then))
                     .then(cmd.clone())
                     .then(op(Token::Else).ignore_then(cmd.clone()))
-                    .map(|((b, c1), c2)| Cmd::If(Box::new(b), Box::new(c1), Box::new(c2)))
+                    .map(|((b, c1), c2)| Cmd::If(Box::new(b), Box::new(c1), Box::new(c2))),
             ));
 
             atom.clone().foldl(
@@ -260,119 +259,3 @@ where
     )
     .padded_by(whitespace)
 }
-
-// #[allow(clippy::let_and_return)]
-// pub fn command_parser<'src>() -> impl Parser<'src, Vec<Spanned<Token>>, Cmd> + Clone {
-//     let ident = text::ascii::ident().padded();
-//     let op = |c: char| just(c).padded();
-//     let sop = |c: &'src str| just(c).padded();
-//     let cmd = recursive(|cmd| {
-//         choice((
-//             sop("while").ignore_then(bool_parser()).then_ignore(sop("do")).then(cmd.clone()).map(|(b, c)| Cmd::While(Box::new(b), Box::new(c))),
-//             sop("if").ignore_then(bool_parser()).then_ignore(sop("then")).then(cmd.clone()).then(sop("else").ignore_then(cmd.clone())).map(|((b, c1), c2)| Cmd::If(Box::new(b), Box::new(c1), Box::new(c2))),
-//             // cmd.clone().then_ignore(op(';')).then(cmd).map(|(c1, c2)| Cmd::Sequence(Box::new(c1), Box::new(c2)))
-//     ))
-//     });
-
-//     cmd.clone().foldl(
-//         choice((
-//             op(';').to(Cmd::Sequence as fn(_, _) -> _),
-//         ))
-//         .then(cmd)
-//         .repeated(),
-//         |lhs, (op, rhs)| op(Box::new(lhs), Box::new(rhs)),
-//     )
-// }
-
-// // pub fn command_parser<'src>() -> impl Parser<'src, Vec<Spanned<Token>>, Cmd> + Clone {
-// //     recursive(|cmd| {
-// //         let assign = lhs_parser()
-// //             .then_ignore(token(Token::Eq))
-// //             .then(expr_parser())
-// //             .map(|(lhs, e)| Cmd::Assign(Box::new(lhs), Box::new(e)));
-
-// //         let let_cmd = just_tok(Token::Let)
-// //             .ignore_then(ident())
-// //             .then_ignore(token(Token::Eq))
-// //             .then(expr_parser())
-// //             .map(|(v, e)| Cmd::Let(v.to_string(), Box::new(e)));
-
-// //         let let_mut_cmd = just_tok(Token::Let)
-// //             .ignore_then(just_tok(Token::Mut))
-// //             .ignore_then(ident())
-// //             .then_ignore(token(Token::Eq))
-// //             .then(expr_parser())
-// //             .map(|(v, e)| Cmd::LetMut(v.to_string(), Box::new(e)));
-
-// //         let alloc = just_tok(Token::Let)
-// //             .ignore_then(ident())
-// //             .then_ignore(token(Token::Eq))
-// //             .then_ignore(just_tok(Token::Alloc))
-// //             .then_ignore(token(Token::LParen))
-// //             .then(arith_parser())
-// //             .then_ignore(token(Token::RParen))
-// //             .map(|(v, a)| Cmd::LetAlloc(v.to_string(), Box::new(a)));
-
-// //         let mut_alloc = just_tok(Token::Let)
-// //             .ignore_then(just_tok(Token::Mut))
-// //             .ignore_then(ident())
-// //             .then_ignore(token(Token::Eq))
-// //             .then_ignore(just_tok(Token::Alloc))
-// //             .then_ignore(token(Token::LParen))
-// //             .then(arith_parser())
-// //             .then_ignore(token(Token::RParen))
-// //             .map(|(v, a)| Cmd::LetMutAlloc(v.to_string(), Box::new(a)));
-
-// //         let skip = just_tok(Token::Skip).to(Cmd::Skip);
-
-// //         let print = just_tok(Token::Print)
-// //             .ignore_then(expr_parser())
-// //             .map(|e| Cmd::Print(Box::new(e)));
-
-// //         let free = just_tok(Token::Free)
-// //             .ignore_then(token(Token::LParen))
-// //             .ignore_then(lhs_parser())
-// //             .then_ignore(token(Token::RParen))
-// //             .map(|lhs| Cmd::Free(Box::new(lhs)));
-
-// //         let wh = just_tok(Token::While)
-// //             .ignore_then(bool_parser())
-// //             .then_ignore(just_tok(Token::Do))
-// //             .then(cmd.clone())
-// //             .map(|(b, c)| Cmd::While(Box::new(b), Box::new(c)));
-
-// //         let if_cmd = just_tok(Token::If)
-// //             .ignore_then(bool_parser())
-// //             .then_ignore(just_tok(Token::Then))
-// //             .then(cmd.clone())
-// //             .then_ignore(just_tok(Token::Else))
-// //             .then(cmd.clone())
-// //             .map(|((b, c1), c2)| Cmd::If(Box::new(b), Box::new(c1), Box::new(c2)));
-
-// //         let simple_cmd = choice((
-// //             skip,
-// //             print,
-// //             let_mut_cmd,
-// //             let_cmd,
-// //             mut_alloc,
-// //             alloc,
-// //             assign,
-// //             free,
-// //             wh,
-// //             if_cmd,
-// //         ));
-
-// //         // Command sequencing with `;`
-// //         simple_cmd.clone()
-// //             .then(
-// //                 token(Token::Semicolon)
-// //                     .ignore_then(cmd.clone())
-// //                     .repeated()
-// //             )
-// //             .map(|(first, rest)| {
-// //                 rest.into_iter().fold(first, |acc, next| {
-// //                     Cmd::Sequence(Box::new(acc), Box::new(next))
-// //                 })
-// //             })
-// //     })
-// // }
