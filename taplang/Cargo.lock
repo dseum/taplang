@@ -92,16 +92,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "huelang"
-version = "0.1.0"
-dependencies = [
- "ariadne",
- "chumsky",
- "logos",
- "pest",
-]
-
-[[package]]
 name = "lazy_static"
 version = "1.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -277,6 +267,16 @@ dependencies = [
  "proc-macro2",
  "quote",
  "unicode-ident",
+]
+
+[[package]]
+name = "taplang"
+version = "0.1.0"
+dependencies = [
+ "ariadne",
+ "chumsky",
+ "logos",
+ "pest",
 ]
 
 [[package]]
