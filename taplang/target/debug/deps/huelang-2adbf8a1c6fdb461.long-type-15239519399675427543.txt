@@ -1,0 +1,2 @@
+Collect<SeparatedBy<Recursive<dyn chumsky::Parser<'_, _, Type, _>>, Just<lexer::Token, _, _>, Type, lexer::Token, _, _>, Type, Type>
+DelimitedBy<Collect<SeparatedBy<Recursive<dyn chumsky::Parser<'_, _, Type, _>>, Just<lexer::Token, _, _>, Type, lexer::Token, _, _>, Type, Type>, Just<lexer::Token, _, _>, Just<lexer::Token, _, _>, lexer::Token, lexer::Token>

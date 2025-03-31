@@ -1,0 +1,2 @@
+chumsky::combinator::Map<chumsky::combinator::Map<Just<char, IoInput<File>, E>, char, {closure@src/parser.rs:121:19: 121:22}>, String, fn(String) -> Lhs {Lhs::Var}>
+chumsky::combinator::Map<chumsky::combinator::Map<Just<char, _, _>, char, {closure@src/parser.rs:121:19: 121:22}>, String, fn(String) -> Lhs {Lhs::Var}>

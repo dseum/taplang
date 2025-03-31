@@ -1,0 +1,1 @@
+chumsky::combinator::Map<Just<fn(String) -> parser::Token {parser::Token::Var}, _, _>, fn(String) -> parser::Token {parser::Token::Var}, fn(String) -> Lhs {Lhs::Var}>

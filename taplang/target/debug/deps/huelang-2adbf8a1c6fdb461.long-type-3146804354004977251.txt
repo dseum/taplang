@@ -1,0 +1,1 @@
+Then<Just<&str, I, chumsky::extra::Full<chumsky::error::Rich<'_, lexer::Token>, (), ()>>, Just<_, I, chumsky::extra::Full<chumsky::error::Rich<'_, lexer::Token>, (), ()>>, &str, _, chumsky::extra::Full<chumsky::error::Rich<'_, lexer::Token>, (), ()>>

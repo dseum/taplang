@@ -1,0 +1,1 @@
+Just<fn(String) -> parser::Token {parser::Token::Var}, &[parser::Token], chumsky::extra::Full<EmptyErr, (), ()>>

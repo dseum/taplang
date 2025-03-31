@@ -1,0 +1,2 @@
+Choice<(To<Just<&str, &'src str, chumsky::extra::Full<EmptyErr, (), ()>>, &str, parser::Type<'_>>, To<Just<&str, &'src str, chumsky::extra::Full<EmptyErr, (), ()>>, &str, parser::Type<'_>>, Then<Just<&str, _, _>, _, &str, _, _>)>
+Choice<(To<Just<&str, _, _>, &str, parser::Type<'_>>, To<Just<&str, _, _>, &str, parser::Type<'_>>, Then<Just<&str, _, _>, _, &str, _, _>)>

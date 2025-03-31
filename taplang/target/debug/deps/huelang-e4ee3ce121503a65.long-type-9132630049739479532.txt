@@ -1,0 +1,1 @@
+To<impl chumsky::Parser<'_, IoInput<File>, Lhs<'_>, _>, Lhs<'_>, {closure@src/parser.rs:150:33: 150:38}>

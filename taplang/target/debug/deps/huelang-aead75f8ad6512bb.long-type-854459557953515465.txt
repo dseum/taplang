@@ -1,0 +1,2 @@
+Foldr<{closure@src/parser.rs:78:27: 78:37}, Repeated<Padded<Just<char, &'a str, chumsky::extra::Full<EmptyErr, (), ()>>>, char, &'a str, chumsky::extra::Full<EmptyErr, (), ()>>, Padded<impl chumsky::Parser<'_, &'a str, <&'a str as SliceInput<'_>>::Slice> + Copy>, char, chumsky::extra::Full<EmptyErr, (), ()>>
+Foldr<{closure@src/parser.rs:78:27: 78:37}, Repeated<Padded<Just<char, _, _>>, char, _, _>, Padded<impl chumsky::Parser<'_, _, <_ as SliceInput<'_>>::Slice, _> + Copy>, char, _>

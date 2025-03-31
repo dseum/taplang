@@ -1,0 +1,1 @@
+Repeated<Padded<Just<char, String, chumsky::extra::Full<EmptyErr, (), ()>>>, char, String, chumsky::extra::Full<EmptyErr, (), ()>>

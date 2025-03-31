@@ -1,0 +1,2 @@
+Foldr<{closure@src/parser.rs:121:27: 121:37}, Repeated<Padded<Just<char, IoInput<File>, E>>, char, IoInput<File>, E>, chumsky::combinator::Map<Padded<impl chumsky::Parser<'_, IoInput<File>, <IoInput<File> as SliceInput<'_>>::Slice, E> + Copy>, String, fn(String) -> Lhs {Lhs::Var}>, char, E>
+Foldr<{closure@src/parser.rs:121:27: 121:37}, Repeated<Padded<Just<char, _, _>>, char, _, _>, chumsky::combinator::Map<Padded<impl chumsky::Parser<'_, _, <_ as SliceInput<'_>>::Slice, _> + Copy>, String, fn(String) -> Lhs {Lhs::Var}>, char, _>

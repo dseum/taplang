@@ -1,0 +1,2 @@
+chumsky::combinator::Map<chumsky::combinator::Filter<chumsky::primitive::Any<IoInput<File>, E>, for<'a> fn(&'a u8) -> bool {core::num::<impl u8>::is_ascii_alphabetic}>, u8, {closure@src/parser.rs:120:14: 120:17}>
+chumsky::combinator::Map<chumsky::combinator::Filter<chumsky::primitive::Any<_, _>, for<'a> fn(&'a u8) -> bool {core::num::<impl u8>::is_ascii_alphabetic}>, u8, {closure@src/parser.rs:120:14: 120:17}>

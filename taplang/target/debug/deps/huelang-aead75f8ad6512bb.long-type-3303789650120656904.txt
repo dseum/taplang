@@ -1,0 +1,2 @@
+Or<Choice<(To<Just<&str, &'a str, chumsky::extra::Full<EmptyErr, (), ()>>, &str, BoolExpr<'_>>, To<Just<&str, &'a str, chumsky::extra::Full<EmptyErr, (), ()>>, &str, BoolExpr<'_>>)>, impl chumsky::Parser<'_, &str, Lhs<'_>>>
+Or<Choice<(To<Just<&str, _, _>, &str, BoolExpr<'_>>, To<Just<&str, _, _>, &str, BoolExpr<'_>>)>, impl chumsky::Parser<'_, &str, Lhs<'_>>>

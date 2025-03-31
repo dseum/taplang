@@ -1,0 +1,1 @@
+Then<ThenIgnore<Recursive<dyn chumsky::Parser<'_, &str, Cmd<'_>>>, Padded<Just<char, &str, chumsky::extra::Full<EmptyErr, (), ()>>>, char, chumsky::extra::Full<EmptyErr, (), ()>>, Recursive<dyn chumsky::Parser<'_, &str, Cmd<'_>>>, Cmd<'_>, Cmd<'_>, chumsky::extra::Full<EmptyErr, (), ()>>

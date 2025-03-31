@@ -1,0 +1,1 @@
+Or<chumsky::combinator::Map<impl chumsky::Parser<'_, Spanned<lexer::Token>, <Spanned<lexer::Token> as SliceInput<'_>>::Slice> + std::marker::Copy, &str, {closure@src/parser.rs:60:38: 60:47}>, chumsky::combinator::Map<impl chumsky::Parser<'_, Spanned<lexer::Token>, ast::Lhs> + Clone, ast::Lhs, {closure@src/parser.rs:61:30: 61:35}>>

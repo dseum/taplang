@@ -1,0 +1,3 @@
+Padded<Just<lexer::Token, I, chumsky::extra::Full<chumsky::error::Rich<'src, lexer::Token>, (), ()>>>
+SeparatedBy<Recursive<dyn chumsky::Parser<'_, I, Type, chumsky::extra::Full<chumsky::error::Rich<'src, lexer::Token>, (), ()>>>, Padded<Just<lexer::Token, I, chumsky::extra::Full<chumsky::error::Rich<'src, lexer::Token>, (), ()>>>, Type, lexer::Token, I, chumsky::extra::Full<chumsky::error::Rich<'src, lexer::Token>, (), ()>>
+Collect<SeparatedBy<Recursive<dyn chumsky::Parser<'_, I, Type, chumsky::extra::Full<chumsky::error::Rich<'src, lexer::Token>, (), ()>>>, Padded<Just<lexer::Token, I, chumsky::extra::Full<chumsky::error::Rich<'src, lexer::Token>, (), ()>>>, Type, lexer::Token, I, chumsky::extra::Full<chumsky::error::Rich<'src, lexer::Token>, (), ()>>, Type, _>

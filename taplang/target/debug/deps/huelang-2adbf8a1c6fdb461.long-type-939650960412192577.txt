@@ -1,0 +1,2 @@
+Ignored<OneOf<&str, I, chumsky::extra::Full<chumsky::error::Rich<'_, lexer::Token>, (), ()>>, lexer::Token>
+SkipThenRetryUntil<Ignored<chumsky::primitive::Any<I, chumsky::extra::Full<chumsky::error::Rich<'_, lexer::Token>, (), ()>>, lexer::Token>, Ignored<OneOf<&str, I, chumsky::extra::Full<chumsky::error::Rich<'_, lexer::Token>, (), ()>>, lexer::Token>>

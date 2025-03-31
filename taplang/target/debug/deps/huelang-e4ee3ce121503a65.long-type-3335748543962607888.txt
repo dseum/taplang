@@ -1,0 +1,1 @@
+Then<Then<Just<&str, _, _>, Or<To<Just<&str, _, _>, &str, bool>, To<Just<&str, _, _>, &str, bool>>, &str, bool, _>, Recursive<dyn chumsky::Parser<'_, _, parser::Type<'_>, _>>, (&str, bool), parser::Type<'_>, _>

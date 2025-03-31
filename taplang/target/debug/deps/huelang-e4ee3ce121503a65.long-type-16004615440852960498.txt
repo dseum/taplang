@@ -1,0 +1,1 @@
+IgnoreThen<Padded<Just<&str, &str, chumsky::extra::Full<EmptyErr, (), ()>>>, char, &str, chumsky::extra::Full<EmptyErr, (), ()>>

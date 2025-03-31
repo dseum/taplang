@@ -1,0 +1,1 @@
+Ignored<Just<char, I, chumsky::extra::Full<chumsky::error::Rich<'_, lexer::Token>, (), ()>>, char>

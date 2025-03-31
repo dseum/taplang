@@ -1,0 +1,1 @@
+ThenIgnore<impl chumsky::Parser<'_, Vec<Spanned<lexer::Token>>, ast::Lhs> + Clone, Padded<Just<char, &str, chumsky::extra::Full<EmptyErr, (), ()>>>, _, chumsky::extra::Full<EmptyErr, (), ()>>

@@ -1,0 +1,2 @@
+Padded<impl chumsky::Parser<'_, Vec<Spanned<lexer::Token>>, <Vec<Spanned<lexer::Token>> as SliceInput<'_>>::Slice> + Copy>
+chumsky::combinator::Map<Padded<impl chumsky::Parser<'_, Vec<Spanned<lexer::Token>>, <Vec<Spanned<lexer::Token>> as SliceInput<'_>>::Slice> + Copy>, String, fn(String) -> ast::Lhs {ast::Lhs::Var}>

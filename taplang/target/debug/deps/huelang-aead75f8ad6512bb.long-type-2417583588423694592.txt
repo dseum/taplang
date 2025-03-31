@@ -1,0 +1,1 @@
+chumsky::combinator::Map<Just<char, IoInput<File>, E>, char, {closure@src/parser.rs:121:19: 121:22}>

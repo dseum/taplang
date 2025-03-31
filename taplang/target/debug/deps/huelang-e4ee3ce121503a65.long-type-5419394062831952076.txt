@@ -1,0 +1,1 @@
+Or<Choice<(To<Just<&str, Spanned<lexer::Token>, chumsky::extra::Full<EmptyErr, (), ()>>, &str, ast::BoolExpr>, To<Just<&str, Spanned<lexer::Token>, chumsky::extra::Full<EmptyErr, (), ()>>, &str, ast::BoolExpr>)>, chumsky::combinator::Map<impl chumsky::Parser<'_, Spanned<lexer::Token>, ast::Lhs> + Clone, ast::Lhs, {closure@src/parser.rs:101:30: 101:35}>>

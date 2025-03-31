@@ -1,0 +1,1 @@
+To<impl chumsky::Parser<'_, &str, Lhs<'_>>, Lhs<'_>, fn(_, _) -> _>
