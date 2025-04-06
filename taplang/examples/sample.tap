@@ -1,1 +1,1 @@
-let x: int = 3+123434 + **a / 45 < 4 && true; x = 1
+{x=2; if b then {let x: int = 3; x=1} else skip}

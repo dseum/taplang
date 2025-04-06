@@ -24,6 +24,10 @@ pub enum Token {
     LSqBra,
     #[token("]")]
     RSqBra,
+    #[token("{")]
+    LCurBra,
+    #[token("}")]
+    RCurBra,
     #[token("=")]
     Equals,
     #[token("<")]
@@ -122,6 +126,8 @@ impl std::fmt::Display for Token {
             Self::Sizeof => write!(f, "sizeof"),
             Self::Amp => write!(f, "&"),
             Self::Skip => write!(f, "skip"),
+            Self::LCurBra => write!(f, "{{"),
+            Self::RCurBra => write!(f, "}}"),
         }
     }
 }

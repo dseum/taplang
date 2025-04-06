@@ -196,6 +196,8 @@ where
     recursive(
         |cmd: Recursive<dyn Parser<'_, I, Cmd, extra::Full<Rich<'_, Token>, (), ()>>>| {
             let atom = choice((
+                cmd.clone()
+                    .delimited_by(op(Token::LCurBra), op(Token::RCurBra)),
                 op(Token::Skip).to(Cmd::Skip),
                 op(Token::Let)
                     .ignore_then(variable)
@@ -259,3 +261,7 @@ where
     )
     .padded_by(whitespace)
 }
+
+// \text{HeapPreds}   & P    \in & \operatorname{Prop}       & \Coloneqq & b \mid \mathkw{not}~P \mid P~\mathkw{or}~Q \mid P~\mathkw{and}~Q\mid P~\mathkw{implies}~Q\mid\mathkw{forall}~x.P\mid\mathkw{exists}~x.P\\
+//                      &          &             &           & \mid \mathkw{emp}\mid E_1\mapsto E_2 \mid P\ast\ast Q \mid P-\ast Q\\
+//   \text{Annotation}   & \alpha    \in &  \operatorname{Ann}     & \Coloneqq & \# \mathkw{pre}~P \mid \# \mathkw{post}~P \mid \# \mathkw{invariant}~P

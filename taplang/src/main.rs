@@ -1,6 +1,7 @@
 mod ast;
 mod lexer;
 mod parser;
+mod typer;
 // mod eval;
 // use ariadne::{Color, Label, Report, ReportKind, Source};
 use chumsky::input::Stream;

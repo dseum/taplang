@@ -1,3 +1,5 @@
+// pub type Typed<T> = (Type, T);
+
 #[derive(Debug, Clone)]
 pub enum Lhs {
     Deref(Box<Self>),
