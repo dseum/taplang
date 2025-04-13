@@ -526,67 +526,67 @@ where
     let whitespace = just(Token::Whitespace).repeated().ignored();
     let op = |tok| just(tok).padded_by(whitespace.clone());
 
-    // let ident = select! {
-    //     Token::Var(s) => s
-    // };
+    let ident = select! {
+        Token::Var(s) => s
+    };
 
     recursive(
         |cmd: Recursive<dyn Parser<'_, I, Cmd, extra::Full<Rich<'_, Token>, (), ()>>>| {
             let skip = op(Token::Skip).to(Cmd::Skip);
-            // let scope = cmd
-            //     .clone()
-            //     .delimited_by(op(Token::LCurBra), op(Token::RCurBra))
-            //     .map(|c| Cmd::Scope(Box::new(c)));
+            let scope = cmd
+                .clone()
+                .delimited_by(op(Token::LCurBra), op(Token::RCurBra))
+                .map(|c| Cmd::Scope(Box::new(c)));
             let declaration =
                 decl_parser(cmd.clone().boxed()).map(|d: Decl| Cmd::TypeDecl(Box::new(d)));
 
             let a: Boxed<'_, '_, I, Cmd, extra::Full<Rich<'_, Token>, (), ()>> =
                 cmd.clone().boxed();
-            // let fxn = fn_parser(a).map(|f| Cmd::FxnDefin(Box::new(f)));
-            // let letass = op(Token::Let)
-            //     .ignore_then(ident)
-            //     .then_ignore(op(Token::Colon))
-            //     .then(type_parser())
-            //     .then_ignore(op(Token::Equals))
-            //     .then(expr_parser())
-            //     .map(|((v, t), e)| Cmd::Let(v, Box::new(t), Box::new(e)));
-            // let letmutass = op(Token::Let)
-            //     .ignore_then(op(Token::Mut))
-            //     .ignore_then(ident)
-            //     .then_ignore(op(Token::Colon))
-            //     .then(type_parser())
-            //     .then_ignore(op(Token::Equals))
-            //     .then(expr_parser())
-            //     .map(|((v, t), e)| Cmd::LetMut(v, Box::new(t), Box::new(e)));
-            // let ass = lhs_parser()
-            //     .then_ignore(op(Token::Equals))
-            //     .then(expr_parser())
-            //     .map(|(lhs, e)| Cmd::Assign(Box::new(lhs), Box::new(e)));
-            // let whilestmt = op(Token::While)
-            //     .ignore_then(expr_parser())
-            //     .then(scope.clone())
-            //     .map(|(b, c)| Cmd::While(Box::new(b), Box::new(c)));
-            // let ifstmt = op(Token::If)
-            //     .ignore_then(expr_parser())
-            //     .then(scope.clone())
-            //     .then_ignore(op(Token::Else))
-            //     .then(scope.clone())
-            //     .map(|((b, c1), c2)| Cmd::If(Box::new(b), Box::new(c1), Box::new(c2)));
+            let fxn = fn_parser(a).map(|f| Cmd::FxnDefin(Box::new(f)));
+            let letass = op(Token::Let)
+                .ignore_then(ident)
+                .then_ignore(op(Token::Colon))
+                .then(type_parser())
+                .then_ignore(op(Token::Equals))
+                .then(expr_parser())
+                .map(|((v, t), e)| Cmd::Let(v, Box::new(t), Box::new(e)));
+            let letmutass = op(Token::Let)
+                .ignore_then(op(Token::Mut))
+                .ignore_then(ident)
+                .then_ignore(op(Token::Colon))
+                .then(type_parser())
+                .then_ignore(op(Token::Equals))
+                .then(expr_parser())
+                .map(|((v, t), e)| Cmd::LetMut(v, Box::new(t), Box::new(e)));
+            let ass = lhs_parser()
+                .then_ignore(op(Token::Equals))
+                .then(expr_parser())
+                .map(|(lhs, e)| Cmd::Assign(Box::new(lhs), Box::new(e)));
+            let whilestmt = op(Token::While)
+                .ignore_then(expr_parser())
+                .then(scope.clone())
+                .map(|(b, c)| Cmd::While(Box::new(b), Box::new(c)));
+            let ifstmt = op(Token::If)
+                .ignore_then(expr_parser())
+                .then(scope.clone())
+                .then_ignore(op(Token::Else))
+                .then(scope.clone())
+                .map(|((b, c1), c2)| Cmd::If(Box::new(b), Box::new(c1), Box::new(c2)));
             let lemma = op(Token::Lemma)
                 .ignore_then(heap_pred_parser())
                 .map(|h| Cmd::Lemma(Box::new(h)));
 
             let atom = choice((
                 skip,
-                // scope,
+                scope,
                 declaration,
-                // fxn,
-                // letass,
-                // letmutass,
-                // whilestmt,
-                // ifstmt,
-                // ass,
-                // lemma
+                fxn,
+                letass,
+                letmutass,
+                whilestmt,
+                ifstmt,
+                ass,
+                lemma
             ));
 
             let semicolon_op = op(Token::Semicolon).to(Cmd::Sequence as fn(_, _) -> _);

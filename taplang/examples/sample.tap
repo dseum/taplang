@@ -1,8 +1,12 @@
+type foo = int;
+
 impl foo [emp] {
-    fn foo(x: int, y: (bool, int)): unit [pre emp][] {
+    fn foo(x: int, y: (bool, int)): unit [pre empg][] {
         skip;; return 1
     },
     fn bar(x: int, y: (bool, int)): unit [][] {
         skip;; return 1
     }
-}
+};
+
+skip
