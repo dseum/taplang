@@ -1,0 +1,3 @@
+fn foo(x: int, y: (bool, int)): unit [][] {
+    skip;; return 1
+}

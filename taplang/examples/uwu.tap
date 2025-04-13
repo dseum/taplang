@@ -1,0 +1,15 @@
+{type foo = int; let a: int = 1; let mut b: (int, bool) = (123, true); *(*(*x).12.2).45=3};while true {
+    skip
+};
+while 3 < 4 {
+    if true {
+        x=3
+    } else {
+        skip;
+        type foo = int;
+        skip;
+        let mut a : (bool, int) = (true, 3);
+        let b : unit = ();
+        skip
+    }
+}

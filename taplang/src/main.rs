@@ -33,6 +33,7 @@ fn main() {
         .map((0..src.len()).into(), |(t, s): (_, _)| (t, s));
     // Parse the token stream with our chumsky parser
     println!("TOKENS: {:?}", token_iter.collect::<Vec<_>>());
+
     match command_parser().parse(token_stream).into_result() {
         // If parsing was successful, attempt to evaluate the s-expression
         Ok(sexpr) => {

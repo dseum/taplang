@@ -1,5 +1,5 @@
 use crate::ast::{
-    Cmd, Decl, Expr, FnDef, HeapPost, HeapPre, HeapPred, ImplFnDef, KCmd, Lhs, Type, Value,
+    Cmd, Decl, Expr, FnDef, HeapPost, HeapPre, HeapPred, ImplFnDef, Lhs, Type, Value,
 };
 use crate::lexer::Token;
 use chumsky::{input::ValueInput, prelude::*};
@@ -105,30 +105,6 @@ where
     let ident = select! {
         Token::Var(s) => s,
     };
-
-    // op(Token::FnDef)
-    //     .ignore_then(ident.clone())
-    //     .then(
-    //         ident
-    //             .then_ignore(op(Token::Colon))
-    //             .then(type_parser())
-    //             .separated_by(op(Token::Comma))
-    //             .collect()
-    //             .delimited_by(op(Token::LParen), op(Token::RParen)),
-    //     )
-    //     .then_ignore(op(Token::Colon))
-    //     .then(type_parser())
-    //     .boxed()
-    //     .then(
-    //         command_parser()
-    //             .then_ignore(op(Token::DScolon))
-    //             .then_ignore(op(Token::Return))
-    //             .then(expr_parser())
-    //             .delimited_by(op(Token::LCurBra), op(Token::RCurBra)),
-    //     )
-    //     .map(|(((name, args), return_type), (c, e))| {
-    //         FnDef::FnDef(name, args, Box::new(return_type), Box::new(c), Box::new(e))
-    //     })
     let args_list = ident
         .then_ignore(op(Token::Colon))
         .then(type_parser())
@@ -195,58 +171,64 @@ where
     ))
 }
 
-pub fn impl_fn_parser<'src, I>()
--> impl Parser<'src, I, ImplFnDef, extra::Err<Rich<'src, Token>>> + Clone
+pub fn impl_fn_parser<'src, I>(
+    cmd: Boxed<'src, 'src, I, Cmd, extra::Full<Rich<'src, Token>, (), ()>>,
+) -> impl Parser<'src, I, ImplFnDef, extra::Err<Rich<'src, Token>>> + Clone
 where
     I: ValueInput<'src, Token = Token, Span = SimpleSpan>,
 {
-    // ImplFnDef(String, Vec<(String, Type)>, Box<Type>, Box<HeapPred>, Box<HeapPred>, Box<KCmd>, Box<Expr>)
-
     let whitespace = just(Token::Whitespace).repeated().ignored();
     let op = |tok| just(tok).padded_by(whitespace.clone());
 
     let ident = select! {
         Token::Var(s) => s,
     };
-
-    op(Token::FnDef)
-        .ignore_then(ident.clone())
-        .then(
-            ident
-                .then_ignore(op(Token::Colon))
-                .then(type_parser())
-                .separated_by(op(Token::Comma))
-                .collect()
-                .delimited_by(op(Token::LParen), op(Token::RParen)),
-        )
+    let args_list = ident
+        .clone()
         .then_ignore(op(Token::Colon))
         .then(type_parser())
+        .separated_by(op(Token::Comma))
+        .collect::<Vec<(String, Type)>>()
+        .delimited_by(op(Token::LParen), op(Token::RParen))
+        .boxed();
+    let ret_tau = type_parser().map(|t| Box::new(t));
+    let heap_pre = heap_pre_parser().delimited_by(op(Token::LSqBra), op(Token::RSqBra));
+    let heap_post = heap_post_parser().delimited_by(op(Token::LSqBra), op(Token::RSqBra));
+
+    let body = cmd
+        .then(
+            op(Token::DScolon)
+                .ignore_then(op(Token::Return))
+                .ignore_then(expr_parser())
+                .or_not(),
+        )
+        .delimited_by(op(Token::LCurBra), op(Token::RCurBra))
+        .map(|(kcommands, maybe_ret)| {
+            let ret = maybe_ret.unwrap_or(Expr::Unit);
+            (kcommands, ret)
+        })
+        .boxed();
+
+    op(Token::FnDef)
+        .ignore_then(ident)
+        .then(args_list)
+        .then_ignore(op(Token::Colon))
+        .then(ret_tau)
+        .then(heap_pre)
+        .then(heap_post)
         .boxed()
-        .then(
-            heap_pre_parser()
-                .delimited_by(op(Token::LSqBra), op(Token::RSqBra))
-                .then(heap_post_parser().delimited_by(op(Token::LSqBra), op(Token::RSqBra))),
-        )
-        .then(
-            k_command_parser()
-                .then_ignore(op(Token::DScolon))
-                .then_ignore(op(Token::Return))
-                .then(expr_parser())
-                .delimited_by(op(Token::LCurBra), op(Token::RCurBra)),
-        )
-        .map(
-            |((((name, args), return_type), (heap_pre, heap_post)), (k, e))| {
-                ImplFnDef::ImplFnDef(
-                    name,
-                    args,
-                    Box::new(return_type),
-                    Box::new(heap_pre),
-                    Box::new(heap_post),
-                    Box::new(k),
-                    Box::new(e),
-                )
-            },
-        )
+        .then(body)
+        .map(|(((((name, args), ret), hpre), hpost), (c,e))| ImplFnDef::ImplFnDef(
+           name,
+            args,
+            ret,
+            Box::new(hpre),
+            Box::new(hpost),
+            Box::new(c),
+            Box::new(e),
+        ))
+
+    // ImplFnDef(String, Vec<(String, Type)>, Box<Type>, Box<HeapPred>, Box<HeapPred>, Box<KCmd>, Box<Expr>)
 }
 
 pub fn expr_parser<'src, I>() -> impl Parser<'src, I, Expr, extra::Err<Rich<'src, Token>>> + Clone
@@ -405,7 +387,9 @@ where
     .padded_by(whitespace)
 }
 
-pub fn decl_parser<'src, I>() -> impl Parser<'src, I, Decl, extra::Err<Rich<'src, Token>>> + Clone
+pub fn decl_parser<'src, I>(
+    cmd: Boxed<'src, 'src, I, Cmd, extra::Full<Rich<'src, Token>, (), ()>>,
+) -> impl Parser<'src, I, Decl, extra::Err<Rich<'src, Token>>> + Clone
 where
     I: ValueInput<'src, Token = Token, Span = SimpleSpan>,
 {
@@ -415,18 +399,22 @@ where
     let ident = select! {
         Token::Var(s) => s,
     };
-    choice((
-        op(Token::TypeDef)
-            .ignore_then(ident)
-            .then_ignore(op(Token::Equals))
-            .then(type_parser())
-            .map(|(name, tau)| Decl::TypeDef(name, Box::new(tau))),
-        // // op(Token::Impl)
-        // //     .ignore_then(ident)
-        // //     .then(heap_pred_parser().delimited_by(op(Token::LCurBra), op(Token::RCurBra)))
-        // //     .then(impl_fn_parser().separated_by(op(Token::Comma)).collect())
-        // //     .map(|((name, hp), fns)| Decl::TypeImpl(name, hp, fns)),
-    ))
+    let typedef = op(Token::TypeDef)
+        .ignore_then(ident)
+        .then_ignore(op(Token::Equals))
+        .then(type_parser())
+        .map(|(name, tau)| Decl::TypeDef(name, Box::new(tau)));
+    let typeimpl = op(Token::Impl)
+        .ignore_then(ident)
+        .then(heap_pred_parser().delimited_by(op(Token::LSqBra), op(Token::RSqBra)))
+        .then(
+            impl_fn_parser(cmd)
+                .separated_by(op(Token::Comma))
+                .collect::<Vec<_>>()
+                .delimited_by(op(Token::LCurBra), op(Token::RCurBra)),
+        )
+        .map(|((name, hp), implfn_vec)| Decl::TypeImpl(name, hp, implfn_vec));
+    choice((typedef, typeimpl))
 }
 pub fn value_parser<'src, I>() -> impl Parser<'src, I, Value, extra::Err<Rich<'src, Token>>> + Clone
 where
@@ -538,62 +526,67 @@ where
     let whitespace = just(Token::Whitespace).repeated().ignored();
     let op = |tok| just(tok).padded_by(whitespace.clone());
 
-    let ident = select! {
-        Token::Var(s) => s
-    };
+    // let ident = select! {
+    //     Token::Var(s) => s
+    // };
 
     recursive(
         |cmd: Recursive<dyn Parser<'_, I, Cmd, extra::Full<Rich<'_, Token>, (), ()>>>| {
             let skip = op(Token::Skip).to(Cmd::Skip);
-            let scope = cmd
-                .clone()
-                .delimited_by(op(Token::LCurBra), op(Token::RCurBra))
-                .map(|c| Cmd::Scope(Box::new(c)));
-            let declaration = decl_parser().map(|d: Decl| Cmd::TypeDecl(Box::new(d)));
+            // let scope = cmd
+            //     .clone()
+            //     .delimited_by(op(Token::LCurBra), op(Token::RCurBra))
+            //     .map(|c| Cmd::Scope(Box::new(c)));
+            let declaration =
+                decl_parser(cmd.clone().boxed()).map(|d: Decl| Cmd::TypeDecl(Box::new(d)));
 
             let a: Boxed<'_, '_, I, Cmd, extra::Full<Rich<'_, Token>, (), ()>> =
                 cmd.clone().boxed();
-            let fxn = fn_parser(a).map(|f| Cmd::FxnDefin(Box::new(f)));
-            let letass = op(Token::Let)
-                .ignore_then(ident)
-                .then_ignore(op(Token::Colon))
-                .then(type_parser())
-                .then_ignore(op(Token::Equals))
-                .then(expr_parser())
-                .map(|((v, t), e)| Cmd::Let(v, Box::new(t), Box::new(e)));
-            let letmutass = op(Token::Let)
-                .ignore_then(op(Token::Mut))
-                .ignore_then(ident)
-                .then_ignore(op(Token::Colon))
-                .then(type_parser())
-                .then_ignore(op(Token::Equals))
-                .then(expr_parser())
-                .map(|((v, t), e)| Cmd::LetMut(v, Box::new(t), Box::new(e)));
-            let ass = lhs_parser()
-                .then_ignore(op(Token::Equals))
-                .then(expr_parser())
-                .map(|(lhs, e)| Cmd::Assign(Box::new(lhs), Box::new(e)));
-            let whilestmt = op(Token::While)
-                .ignore_then(expr_parser())
-                .then(scope.clone())
-                .map(|(b, c)| Cmd::While(Box::new(b), Box::new(c)));
-            let ifstmt = op(Token::If)
-                .ignore_then(expr_parser())
-                .then(scope.clone())
-                .then_ignore(op(Token::Else))
-                .then(scope.clone())
-                .map(|((b, c1), c2)| Cmd::If(Box::new(b), Box::new(c1), Box::new(c2)));
+            // let fxn = fn_parser(a).map(|f| Cmd::FxnDefin(Box::new(f)));
+            // let letass = op(Token::Let)
+            //     .ignore_then(ident)
+            //     .then_ignore(op(Token::Colon))
+            //     .then(type_parser())
+            //     .then_ignore(op(Token::Equals))
+            //     .then(expr_parser())
+            //     .map(|((v, t), e)| Cmd::Let(v, Box::new(t), Box::new(e)));
+            // let letmutass = op(Token::Let)
+            //     .ignore_then(op(Token::Mut))
+            //     .ignore_then(ident)
+            //     .then_ignore(op(Token::Colon))
+            //     .then(type_parser())
+            //     .then_ignore(op(Token::Equals))
+            //     .then(expr_parser())
+            //     .map(|((v, t), e)| Cmd::LetMut(v, Box::new(t), Box::new(e)));
+            // let ass = lhs_parser()
+            //     .then_ignore(op(Token::Equals))
+            //     .then(expr_parser())
+            //     .map(|(lhs, e)| Cmd::Assign(Box::new(lhs), Box::new(e)));
+            // let whilestmt = op(Token::While)
+            //     .ignore_then(expr_parser())
+            //     .then(scope.clone())
+            //     .map(|(b, c)| Cmd::While(Box::new(b), Box::new(c)));
+            // let ifstmt = op(Token::If)
+            //     .ignore_then(expr_parser())
+            //     .then(scope.clone())
+            //     .then_ignore(op(Token::Else))
+            //     .then(scope.clone())
+            //     .map(|((b, c1), c2)| Cmd::If(Box::new(b), Box::new(c1), Box::new(c2)));
+            let lemma = op(Token::Lemma)
+                .ignore_then(heap_pred_parser())
+                .map(|h| Cmd::Lemma(Box::new(h)));
 
             let atom = choice((
                 skip,
-                scope,
+                // scope,
                 declaration,
-                fxn,
-                letass,
-                letmutass,
-                whilestmt,
-                ifstmt,
-                ass,
+                // fxn,
+                // letass,
+                // letmutass,
+                // whilestmt,
+                // ifstmt,
+                // ass,
+                // lemma
             ));
 
             let semicolon_op = op(Token::Semicolon).to(Cmd::Sequence as fn(_, _) -> _);
@@ -606,40 +599,7 @@ where
                 .boxed();
 
             sequence
-            // atom.clone()
-            //     .foldl(
-            //         choice((op(Token::Semicolon).to(Cmd::Sequence as fn(_, _) -> _),))
-            //             .then(atom)
-            //             .repeated(),
-            //         |lhs, (op, rhs)| op(Box::new(lhs), Box::new(rhs)),
-            //     )
-            //     .boxed()
         },
     )
     .padded_by(whitespace)
-}
-
-pub fn k_command_parser<'src, I>()
--> impl Parser<'src, I, KCmd, extra::Err<Rich<'src, Token>>> + Clone
-where
-    I: ValueInput<'src, Token = Token, Span = SimpleSpan>,
-{
-    let whitespace = just(Token::Whitespace).repeated().ignored();
-    let op = |tok| just(tok).padded_by(whitespace.clone());
-
-    recursive(
-        |kcmd: Recursive<dyn Parser<'_, I, KCmd, extra::Full<Rich<'_, Token>, (), ()>>>| {
-            choice((
-                command_parser().map(|c| KCmd::Command(Box::new(c))),
-                kcmd.clone()
-                    .then_ignore(op(Token::Semicolon))
-                    .then(kcmd.clone())
-                    .map(|(k1, k2)| KCmd::Sequence(Box::new(k1), Box::new(k2))),
-                op(Token::Lemma)
-                    .ignore_then(heap_pred_parser())
-                    .map(|h| KCmd::Lemma(Box::new(h))),
-            ))
-            .boxed()
-        },
-    )
 }

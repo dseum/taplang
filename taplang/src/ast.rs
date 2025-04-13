@@ -89,7 +89,7 @@ pub enum ImplFnDef {
         Box<Type>,
         Box<HeapPre>,
         Box<HeapPost>,
-        Box<KCmd>,
+        Box<Cmd>,
         Box<Expr>,
     ),
 }
@@ -112,11 +112,5 @@ pub enum Cmd {
     LetMut(String, Box<Type>, Box<Expr>),
     While(Box<Expr>, Box<Self>),
     If(Box<Expr>, Box<Self>, Box<Self>),
-}
-
-#[derive(Debug, Clone)]
-pub enum KCmd {
-    Command(Box<Cmd>),
-    Sequence(Box<Self>, Box<Self>),
     Lemma(Box<HeapPred>),
 }
