@@ -1,6 +1,6 @@
 // use crate::ast::{ArithExpr, BoolExpr, Cmd, Expr, Lhs, Type, Typed};
 
-
+// have internal arrow/exp type.
 
 // fn type_lhs(lhs: Lhs) -> Typed<Lhs> {
 //     match lhs {

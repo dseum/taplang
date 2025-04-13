@@ -2,61 +2,121 @@
 
 #[derive(Debug, Clone)]
 pub enum Lhs {
-    Deref(Box<Self>),
     Var(String),
+    Index(Box<Self>, isize),
+    Deref(Box<Self>),
 }
 #[derive(Debug, Clone)]
-pub enum BoolExpr {
+pub enum Type {
+    Unit,
+    Int,
+    Bool,
+    RefMut(Box<Self>),
+    Ref(Box<Self>),
+    Loc(Box<Self>),
+    Prod(Vec<Self>),
+    CustomType(String),
+}
+#[derive(Debug, Clone)]
+pub enum HeapPre {
+    Vacuous,
+    Pre(Box<HeapPred>),
+}
+#[derive(Debug, Clone)]
+pub enum HeapPost {
+    Vacuous,
+    Post(Box<HeapPred>),
+}
+#[derive(Debug, Clone)]
+pub enum Expr {
+    Index(Box<Self>, isize),
+    Lvalue(Box<Lhs>),
+    ImmutRef(String),
+    MutRef(String),
+    Tuple(Vec<Self>),
+    Unit,
+    Alloc(Box<Self>),
+    Free(Box<Lhs>),
+    Call(String, Vec<Self>),
+    BoundCall(String, String, Vec<Self>),
+    // booleans
     True,
     False,
-    Lvalue(Box<Lhs>),
     Bang(Box<Self>),
     And(Box<Self>, Box<Self>),
-    Eq(Box<ArithExpr>, Box<ArithExpr>),
-    Lt(Box<ArithExpr>, Box<ArithExpr>),
-}
-#[derive(Debug, Clone)]
-pub enum ArithExpr {
+    Or(Box<Self>, Box<Self>),
+    Eq(Box<Self>, Box<Self>),
+    Lt(Box<Self>, Box<Self>),
+    // arithemtic
     Nat(isize),
-    Lvalue(Box<Lhs>),
     Neg(Box<Self>),
     Plus(Box<Self>, Box<Self>),
     Minus(Box<Self>, Box<Self>),
     Mult(Box<Self>, Box<Self>),
     Div(Box<Self>, Box<Self>),
-    Sizeof(Box<Type>),
 }
 #[derive(Debug, Clone)]
-pub enum Type {
-    Int,
-    Bool,
-    Ref {
-        mutable: bool,
-        inner_type: Box<Self>,
-    },
-    Loc(Box<Self>),
-    Prod(Vec<Self>),
-    // CustomType(String),
+pub enum Value {
+    Unit,
+    Int(isize),
+    True,
+    False,
 }
 #[derive(Debug, Clone)]
-pub enum Expr {
-    Lvalue(Box<Lhs>),
-    Bool(Box<BoolExpr>),
-    Int(Box<ArithExpr>),
-    ImmutRef(String),
-    MutRef(String),
-    Tuple(Vec<Self>),
+pub enum HeapPred {
+    Var(String),
+    Not(Box<Self>),
+    Or(Box<Self>, Box<Self>),
+    And(Box<Self>, Box<Self>),
+    Implies(Box<Self>, Box<Self>),
+    Forall(String, Box<Self>),
+    Exists(String, Box<Self>),
+    Emp,
+    Pointsto(String, Box<Value>),
+    SepConj(Box<Self>, Box<Self>),
+    MagicWand(Box<Self>, Box<Self>),
 }
+#[derive(Debug, Clone)]
+pub enum FnDef {
+    FnDef(String, Vec<(String, Type)>, Box<Type>, Box<Cmd>, Box<Expr>),
+}
+
+#[derive(Debug, Clone)]
+pub enum ImplFnDef {
+    ImplFnDef(
+        String,
+        Vec<(String, Type)>,
+        Box<Type>,
+        Box<HeapPre>,
+        Box<HeapPost>,
+        Box<KCmd>,
+        Box<Expr>,
+    ),
+}
+
+#[derive(Debug, Clone)]
+pub enum Decl {
+    TypeDef(String, Box<Type>),
+    TypeImpl(String, HeapPred, Vec<ImplFnDef>),
+}
+
 #[derive(Debug, Clone)]
 pub enum Cmd {
+    TypeDecl(Box<Decl>),
+    FxnDefin(Box<FnDef>),
     Skip,
+    Scope(Box<Self>),
     Assign(Box<Lhs>, Box<Expr>),
     Sequence(Box<Self>, Box<Self>),
     Let(String, Box<Type>, Box<Expr>),
     LetMut(String, Box<Type>, Box<Expr>),
-    LetAlloc(String, Box<Type>, Box<ArithExpr>),
-    LetMutAlloc(String, Box<Type>, Box<ArithExpr>),
-    Free(Box<Lhs>),
-    While(Box<BoolExpr>, Box<Self>),
-    If(Box<BoolExpr>, Box<Self>, Box<Self>),
+    While(Box<Expr>, Box<Self>),
+    If(Box<Expr>, Box<Self>, Box<Self>),
+}
+
+#[derive(Debug, Clone)]
+pub enum KCmd {
+    Command(Box<Cmd>),
+    Sequence(Box<Self>, Box<Self>),
+    Lemma(Box<HeapPred>),
 }
