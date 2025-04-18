@@ -1,4 +1,4 @@
-type foo = int;
+type foo(int);
 
 impl foo [emp] {
     fn foo(x: int, y: (bool, int)): unit [pre empg][] {

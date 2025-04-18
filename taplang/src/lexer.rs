@@ -4,7 +4,6 @@ use logos::Logos;
 
 /* ANCHOR: tokens */
 #[derive(Logos, Debug, PartialEq, Eq, Hash, Clone)]
-#[logos(error = String)]
 pub enum Token {
     // values
     #[regex("[0-9]+", |lex| lex.slice().parse::<isize>().unwrap())]
@@ -13,6 +12,8 @@ pub enum Token {
     True,
     #[token("false", priority = 1)]
     False,
+    // #[regex(r"\(\s*\)", priority = 1)]
+    // Unit,
     // names
     #[regex(r"[_A-Za-z][_\w]*", |lex| lex.slice().to_string(), priority = 0)]
     Var(String),
@@ -54,6 +55,8 @@ pub enum Token {
     Comma,
     #[token(".")]
     Dot,
+    #[token("@", priority = 1)]
+    At,
     // command operators
     #[token(";")]
     Semicolon,
@@ -101,7 +104,6 @@ pub enum Token {
     Skip,
     #[regex(r"[ \t\f\n]+")]
     Whitespace,
-    Error,
     // Functions
     #[token("fn", priority = 1)]
     FnDef,
@@ -139,13 +141,16 @@ pub enum Token {
     Hsepconj,
     #[token("-*", priority = 1)]
     Hmagicwand,
+    Error
 }
 
 impl std::fmt::Display for Token {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         match self {
+            // Self::Unit => write!(f, "()"),
             Self::Nat(i) => write!(f, "{}", i),
             Self::Var(s) => write!(f, "{}", s),
+            Self::At => write!(f, "@"),
             Self::Plus => write!(f, "+"),
             Self::Minus => write!(f, "-"),
             Self::Dot => write!(f, "."),
