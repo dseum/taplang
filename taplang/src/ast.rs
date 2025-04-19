@@ -124,11 +124,11 @@ pub enum HeapPred {
 
 #[derive(Debug, Clone)]
 pub struct FnDef<T>(
-    pub String,
-    pub Vec<(String, Type)>,
-    pub Box<Type>,
-    pub Box<Cmd<T>>,
-    pub Box<Expr<T>>,
+    pub Spanned<String>,
+    pub Vec<Spanned<(String, Type)>>,
+    pub Box<Spanned<Type>>,
+    pub Box<Spanned<Cmd<T>>>,
+    pub Box<Spanned<Expr<T>>>,
 );
 
 #[derive(Debug, Clone)]
