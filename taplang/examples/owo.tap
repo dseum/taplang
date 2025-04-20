@@ -3,7 +3,9 @@ if 7 < 3 == 3 {skip; skip} else {skip};
 impl Color [emp] {
     fn foo(x: int, y: (bool, int)): unit [][] {
         let x:int = alloc(4);
+        lemma emp;
         let y: unit = free(x.4);
         skip; return 1
     }
-}
+};
+{skip; skip}
