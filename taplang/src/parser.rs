@@ -1,5 +1,3 @@
-use std::collections::VecDeque;
-
 use crate::ast::{
     Cmd, Decl, Expr, FnDef, HeapPost, HeapPre, HeapPred, ImplFnDef, KCmd, KExpr, Lhs, Span,
     Spanned, Type,
@@ -69,30 +67,38 @@ impl ParseError {
 }
 
 pub struct Parser<'src> {
-    src: &'src String,
-    tokens: &'src mut VecDeque<Spanned<Token>>,
+    src: &'src str,
+    tokens: &'src[Spanned<Token>],
+    pub pos: usize,
     left_span: Span,
 }
+
 impl<'src> Parser<'src> {
     pub fn new(
         src: &'src String,
-        tokens: &'src mut VecDeque<Spanned<Token>>,
+        tokens: &'src[Spanned<Token>],
         left_span: Span,
     ) -> Self {
         Self {
             src,
             tokens,
+            pos: 0,
             left_span,
         }
     }
 
+    fn peek(&self) -> Option<&Spanned<Token>> {
+        self.tokens.get(self.pos)
+    }
+
     fn next(&mut self, ctx: String) -> Result<Spanned<Token>, ParseError> {
-        if let Some(tok) = self.tokens.pop_front() {
-            self.left_span = tok.1.end..self.left_span.end;
-            Ok(tok)
+        if let Some((tok, span)) = self.peek().cloned() {
+            self.pos += 1;
+            self.left_span = span.end..self.left_span.end;
+            Ok((tok, span))
         } else {
             Err(ParseError {
-                src: format!("{} ", self.src.clone()),
+                src: format!("{} ", self.src.to_string()),
                 span: self.left_span.clone(),
                 message: format!("Unexpected EOF."),
                 ctx,
@@ -102,13 +108,11 @@ impl<'src> Parser<'src> {
 
     fn expect(&mut self, expected: Token, ctx: String) -> Result<Spanned<Token>, ParseError> {
         let (next_tok, tok_span) = self.next(ctx.clone())?;
-
-        // self.next(...) modifies self.left_span, so we can take advantage of the mutation
         if std::mem::discriminant(&expected) == std::mem::discriminant(&next_tok) {
             Ok((next_tok, tok_span))
         } else {
             Err(ParseError {
-                src: self.src.clone(),
+                src: self.src.to_string(),
                 span: tok_span,
                 message: format!("Expected `{}`, but found `{}`", expected, next_tok),
                 ctx,
@@ -133,62 +137,61 @@ impl<'src> Parser<'src> {
         inner: fn(&mut Self) -> Result<Spanned<T>, ParseError>,
         sep: Token,
         allow_trailing_sep: bool,
-        min_sep_occur: i32,
+        min_sep_occur: usize,
     ) -> Result<Vec<Spanned<T>>, ParseError> {
         let span_start = self.left_span.start;
-        let mut v = Vec::new();
+        let mut items = Vec::new();
+        let mut seps = 0;
 
-        // if true, parse inner. else, sep
-        let mut sep_or_inner = true;
-
-        let mut sep_count = 0;
-
-        while self.tokens.len() > 0 {
-            let mut tok_cop = self.tokens.clone();
-            if sep_or_inner {
-                if let Ok(foo) = inner(self) {
-                    v.push(foo)
+        // Try to parse the first element, but allow absence when min_sep_occur == 0
+        let save_pos = self.pos;
+        match inner(self) {
+            Ok(elem) => items.push(elem),
+            Err(e) => {
+                if min_sep_occur == 0 {
+                    // Empty list is allowed; rewind and return empty vec
+                    self.pos = save_pos;
+                    return Ok(items);
                 } else {
-                    self.tokens.clear();
-                    self.tokens.append(&mut tok_cop);
-                    break;
+                    return Err(e); // Need at least one element
                 }
-            } else {
-                if self
-                    .expect(sep.clone(), format!("parse separator {}", sep.clone()))
-                    .is_err()
-                {
-                    self.tokens.clear();
-                    self.tokens.append(&mut tok_cop);
-                    break;
-                } else {
-                    sep_count += 1
-                }
-            }
-            sep_or_inner = !sep_or_inner;
-        }
-
-        if allow_trailing_sep {
-            if self.lookahead_match_tokens(&vec![sep.clone()]) {
-                sep_count += 1;
-                self.expect(sep.clone(), "this shouldn't fail lmao".to_string())?;
             }
         }
 
-        let span_end = self.left_span.start;
+        loop {
+            if !self.lookahead_match_tokens(&vec![sep.clone()]) {
+                break;
+            }
+            let _ = self.next(format!("consume `{}`", sep.clone()))?;
+            seps += 1;
+            let after_sep = self.pos;
 
-        if sep_count < min_sep_occur {
+            match inner(self) {
+                Ok(elem) => {
+                    items.push(elem);
+                }
+                Err(e) => {
+                    if allow_trailing_sep {
+                        // accept trailing separator, rewind to after it
+                        self.pos = after_sep;
+                        break;
+                    } else {
+                        return Err(e);
+                    }
+                }
+            }
+        }
+        if seps < min_sep_occur {
             Err(ParseError {
-                src: self.src.clone(),
-                span: span_start..span_end,
+                src: self.src.to_string(),
+                span: span_start..self.left_span.start,
                 message: format!(
-                    "Expected `{}` many separators, but only found `{}` many separators",
-                    min_sep_occur, sep_count
+                    "expected at least {min_sep_occur} `{sep}` separator(s), but only found {seps} many"
                 ),
-                ctx: format!("parse a separated pattern with separator {}", sep),
+                ctx: format!("parse list separated by `{sep}`"),
             })
         } else {
-            Ok(v)
+            Ok(items)
         }
     }
 
@@ -198,15 +201,17 @@ impl<'src> Parser<'src> {
         ctx: String,
     ) -> Result<Spanned<T>, ParseError> {
         let mut errs = Vec::new();
-        let n = fxns.len();
-        for f in fxns.into_iter() {
-            let tokens_cop = self.tokens.clone();
+
+        let og_pos = self.pos;
+
+        for f in fxns.iter() {
             match f(self) {
-                Ok(spanned_expr1) => return Ok(spanned_expr1),
-                Err(e) => errs.push(e),
+                Ok(node) => return Ok(node),
+                Err(e) => {
+                    errs.push(e);
+                    self.pos = og_pos;
+                }
             }
-            self.tokens.clear();
-            self.tokens.extend(tokens_cop);
         }
 
         let min_span_start = errs
@@ -221,10 +226,10 @@ impl<'src> Parser<'src> {
             .expect("(internal-error) this function should never be called with an empty fxns");
 
         Err(ParseError {
-                    src: self.src.clone(),
+                    src: self.src.to_string(),
                     span: (min_span_start..max_span_end),
-                    message: format!("parse {n} possible grammar rules, but all failed. Here are their individual messages:
-                {}", errs.iter().map(ParseError::to_string).collect::<Vec<String>>().join("\n\n")),
+                    message: format!("parse {} possible grammar rules, but all failed. Here are their individual messages:
+                {}",fxns.len(), errs.iter().map(ParseError::to_string).collect::<Vec<String>>().join("\n\n")),
                     ctx
                 })
     }
@@ -304,7 +309,7 @@ impl<'src> Parser<'src> {
     fn lookahead_match_tokens(&self, toks: &Vec<Token>) -> bool {
         toks.iter()
             .enumerate()
-            .all(|(i, tok)| match self.tokens.get(i) {
+            .all(|(i, tok)| match self.tokens.get(self.pos + i) {
                 Some((next, _)) => std::mem::discriminant(next) == std::mem::discriminant(tok),
                 _ => false,
             })
@@ -364,6 +369,20 @@ impl<'src> Parser<'src> {
     //         Ok(((innie, innie_span.clone()), innie_span))
     //     }
     // }
+
+    fn lookahead_comma_before_rparen(&self) -> bool {
+        let mut depth = 0;
+        for &(ref tok, _) in self.tokens.iter().skip(self.pos) {
+            match tok {
+                Token::LParen => depth += 1,
+                Token::RParen if depth == 1 => return false, // closed our paren without seeing a comma
+                Token::RParen => depth -= 1,
+                Token::Comma if depth == 1 => return true, // found a comma in this tuple
+                _ => {}
+            }
+        }
+        false
+    }
 
     fn macroparse_wrap_delimiters<T>(
         &mut self,
@@ -463,11 +482,12 @@ impl<'src> Parser<'src> {
     }
 
     fn lookahead_is_lhs(&self) -> bool {
-        let mut toks = self.tokens.clone();
+        let mut toks = self.tokens;
 
         let mut p = Parser {
             src: self.src,
             tokens: &mut toks,
+            pos: self.pos,
             left_span: self.left_span.clone(),
         };
 
@@ -491,7 +511,7 @@ impl<'src> Parser<'src> {
 
                 let span = unexp_span;
                 Err(ParseError {
-                    src: self.src.clone(),
+                    src: self.src.to_string(),
                     span,
                     message,
                     ctx: "parse a value literal".to_string(),
@@ -588,16 +608,22 @@ impl<'src> Parser<'src> {
     pub fn parse_expr_atom(&mut self) -> Result<Spanned<Expr<()>>, ParseError> {
         if self.lookahead_match_tokens(&vec![Token::LParen]) {
             if self.lookahead_match_tokens(&vec![Token::LParen, Token::RParen]) {
-                // unit
-                self.parse_expr_val()
+                // unit `()`
+                return self.parse_expr_val();
+            } else if self.lookahead_match_tokens(&vec![Token::LParen])
+                && self.lookahead_comma_before_rparen()
+            {
+                println!("trigger");
+                // tuple `(e1, e2, …)`
+                self.parse_expr_tuple()
             } else {
-                let ((e, _e_span), delim_e_span) = self.macroparse_wrap_delimiters(
+                // otherwise: just a grouped single expression `(e)`
+                let ((inner, _), span) = self.macroparse_wrap_delimiters(
                     Self::parse_expr,
                     Token::LParen,
                     Token::RParen,
                 )?;
-
-                Ok((e, delim_e_span))
+                return Ok((inner, span));
             }
         } else if self.lookahead_match_tokens(&vec![Token::Amp, Token::Mut]) {
             self.parse_expr_mut_ref()
@@ -719,6 +745,7 @@ impl<'src> Parser<'src> {
 
         Ok((Expr::BoundCall(type_name, fxn_name, v, ()), span))
     }
+
     pub fn parse_expr_call(&mut self) -> Result<Spanned<Expr<()>>, ParseError> {
         let (fxn_name, sp) = match self.expect(
             Token::Var(String::new()),
@@ -742,17 +769,24 @@ impl<'src> Parser<'src> {
             p.metaparse_separated_by(Parser::parse_expr, Token::Comma, true, 1)
         }
 
-        let (v, v_span) =
-            self.macroparse_wrap_delimiters(elements, Token::LParen, Token::RParen)?;
+        let (v, span) = self.macroparse_wrap_delimiters(elements, Token::LParen, Token::RParen)?;
 
-        Ok((Expr::Tuple(v, ()), v_span))
+        Ok((Expr::Tuple(v, ()), span))
     }
 
     pub fn parse_expr(&mut self) -> Result<Spanned<Expr<()>>, ParseError> {
-        self.metaparse_or(
-            vec![Self::parse_expr_cmp, Self::parse_expr_tuple],
-            "parse expression".to_string(),
-        )
+        println!(
+            "check: {}  .   {}",
+            self.pos,
+            self.lookahead_comma_before_rparen()
+        );
+
+        self.parse_expr_cmp()
+
+        // self.metaparse_or(
+        //     vec![Self::parse_expr_cmp, Self::parse_expr_tuple],
+        //     "parse expression".to_string(),
+        // )
     }
 
     pub fn parse_kexpr(&mut self) -> Result<Spanned<KExpr<()>>, ParseError> {
@@ -815,7 +849,7 @@ impl<'src> Parser<'src> {
                     "expected a primitive type, a custom type, or `(`, but found {}",
                     unexpected_tok
                 ),
-                src: self.src.clone(),
+                src: self.src.to_string(),
                 ctx: "parse a primitive type or a custom type".to_string(),
             }),
         }
@@ -1050,7 +1084,7 @@ impl<'src> Parser<'src> {
                     Token::Impl,
                     unexpected_tok
                 ),
-                src: self.src.clone(),
+                src: self.src.to_string(),
                 ctx: "parse a declaration".to_string(),
             })
         }
@@ -1091,7 +1125,7 @@ impl<'src> Parser<'src> {
                     Token::LCurBra,
                     unexpected_tok
                 ),
-                src: self.src.clone(),
+                src: self.src.to_string(),
                 ctx: format!("parse a while {}'s body", grammar_part),
             })?;
         }
@@ -1126,7 +1160,7 @@ impl<'src> Parser<'src> {
                     Token::LCurBra,
                     unexpected_tok
                 ),
-                src: self.src.clone(),
+                src: self.src.to_string(),
                 ctx: format!("parse an if {}'s then branch", grammar_part.clone()),
             })?;
         }
@@ -1150,7 +1184,7 @@ impl<'src> Parser<'src> {
                     Token::LCurBra,
                     unexpected_tok
                 ),
-                src: self.src.clone(),
+                src: self.src.to_string(),
                 ctx: format!("parse an if {}'s else branch", grammar_part.clone()),
             })?;
         }

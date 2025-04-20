@@ -6,8 +6,6 @@ use std::collections::VecDeque;
 // mod typer;
 // mod eval;
 // use ariadne::{Color, Label, Report, ReportKind, Source};
-use chumsky::input::Stream;
-use chumsky::prelude::*;
 use lexer::Token;
 use logos::Logos;
 use parser::Parser;
@@ -31,15 +29,18 @@ fn main() {
     let toks = token_iter.collect::<Vec<_>>();
     println!("TOKENS: {:?}", toks);
 
-    let mut sanitized_toks = toks
+    let sanitized_toks = toks
         .into_iter()
         .filter(|st| st.0 != Token::Whitespace)
-        .collect::<VecDeque<_>>();
+        .collect::<Vec<_>>();
 
-    match Parser::new(&src, &mut sanitized_toks, (0..src.len())).parse_command() {
+    let mut p = Parser::new(&src, &sanitized_toks, 0..src.len());
+    match p.parse_command() {
         Ok(file_ast) => println!("AST: {:?}", file_ast),
         Err(e) => e.msg(),
     }
+
+    println!("posssss :         {}", p.pos);
 
     // println!("TOKENS: {:?}", token_stream);
 
