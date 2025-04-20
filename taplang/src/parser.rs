@@ -86,10 +86,6 @@ impl<'src> Parser<'src> {
         }
     }
 
-    fn peek(&self) -> Option<&Token> {
-        self.tokens.front().map(|tw| &tw.0)
-    }
-
     fn next(&mut self, ctx: String) -> Result<Spanned<Token>, ParseError> {
         if let Some(tok) = self.tokens.pop_front() {
             self.left_span = tok.1.end..self.left_span.end;
@@ -102,19 +98,6 @@ impl<'src> Parser<'src> {
                 ctx,
             })
         }
-    }
-
-    fn unexpected(
-        &self,
-        ctx: String,
-        unexpected_token: Token,
-    ) -> Result<Spanned<Token>, ParseError> {
-        Err(ParseError {
-            src: self.src.clone(),
-            span: self.left_span.clone(),
-            message: format!("Unexpected `{}`.", unexpected_token),
-            ctx,
-        })
     }
 
     fn expect(&mut self, expected: Token, ctx: String) -> Result<Spanned<Token>, ParseError> {
@@ -142,7 +125,7 @@ impl<'src> Parser<'src> {
         for expected in expected_tok_seq.into_iter() {
             spanned_toks_vec.push(self.expect(expected, ctx.clone())?);
         }
-        Ok((spanned_toks_vec))
+        Ok(spanned_toks_vec)
     }
 
     fn metaparse_separated_by<T>(
@@ -250,11 +233,8 @@ impl<'src> Parser<'src> {
         &mut self,
         uops: Vec<(Token, fn(Box<Spanned<T>>) -> T)>,
         parse_inside: fn(&mut Self) -> Result<Spanned<T>, ParseError>,
-        ctx: String,
-        start_span: Span,
     ) -> Result<Spanned<T>, ParseError> {
         // let (uop_tok, uop_span) = self.next(ctx.clone())?;
-
         let span_start = self.left_span.start;
         let mut fxns = Vec::new();
         while self.tokens.len() > 0 {
@@ -330,60 +310,60 @@ impl<'src> Parser<'src> {
             })
     }
 
-    // accepts subvecs but the order of appearance is fixed. consider:
-    // [3, 5, 1] <= [3, 1, 5, 2, 1]   IS false
-    // [3, 5, 1] <= [3, 2, 5, 2, 2, 2, 1, 0]   IS true
-    fn lookahead_match_tokens_spaced_out_strict_order(&self, target_toks: &Vec<Token>) -> bool {
-        let mut haystack_pos = 0;
+    // // accepts subvecs but the order of appearance is fixed. consider:
+    // // [3, 5, 1] <= [3, 1, 5, 2, 1]   IS false
+    // // [3, 5, 1] <= [3, 2, 5, 2, 2, 2, 1, 0]   IS true
+    // fn lookahead_match_tokens_spaced_out_strict_order(&self, target_toks: &Vec<Token>) -> bool {
+    //     let mut haystack_pos = 0;
 
-        for item in target_toks {
-            // Search for the next matching item starting from haystack_pos
-            if let Some(pos) = self
-                .tokens
-                .iter()
-                .skip(haystack_pos)
-                .position(|(h, _)| h == item)
-            {
-                haystack_pos += pos + 1; // move past the found item
-            } else {
-                return false; // not found
-            }
-        }
+    //     for item in target_toks {
+    //         // Search for the next matching item starting from haystack_pos
+    //         if let Some(pos) = self
+    //             .tokens
+    //             .iter()
+    //             .skip(haystack_pos)
+    //             .position(|(h, _)| h == item)
+    //         {
+    //             haystack_pos += pos + 1; // move past the found item
+    //         } else {
+    //             return false; // not found
+    //         }
+    //     }
 
-        return true;
-    }
+    //     return true;
+    // }
 
-    // accepts subvecs
-    fn lookahead_match_tokens_spaced_out(&self, target_toks: &Vec<Token>) -> bool {
-        let mut it = self.tokens.iter();
-        for targ_tok in target_toks {
-            let mut targ_tok_found = false;
-            for (next, _) in &mut it {
-                if std::mem::discriminant(next) == std::mem::discriminant(targ_tok) {
-                    targ_tok_found = true;
-                    break;
-                }
-            }
-            if !targ_tok_found {
-                return false;
-            }
-        }
-        return true;
-    }
+    // // accepts subvecs
+    // fn lookahead_match_tokens_spaced_out(&self, target_toks: &Vec<Token>) -> bool {
+    //     let mut it = self.tokens.iter();
+    //     for targ_tok in target_toks {
+    //         let mut targ_tok_found = false;
+    //         for (next, _) in &mut it {
+    //             if std::mem::discriminant(next) == std::mem::discriminant(targ_tok) {
+    //                 targ_tok_found = true;
+    //                 break;
+    //             }
+    //         }
+    //         if !targ_tok_found {
+    //             return false;
+    //         }
+    //     }
+    //     return true;
+    // }
 
-    fn macroparse_optional_wrap_delimiters<T>(
-        &mut self,
-        parse: fn(&mut Self) -> Result<Spanned<T>, ParseError>,
-        left_delimiter: Token,
-        right_delimiter: Token,
-    ) -> Result<(Spanned<T>, Span), ParseError> {
-        if self.lookahead_match_tokens(&vec![left_delimiter.clone()]) {
-            self.macroparse_wrap_delimiters(parse, left_delimiter, right_delimiter)
-        } else {
-            let (innie, innie_span) = parse(self)?;
-            Ok(((innie, innie_span.clone()), innie_span))
-        }
-    }
+    // fn macroparse_optional_wrap_delimiters<T>(
+    //     &mut self,
+    //     parse: fn(&mut Self) -> Result<Spanned<T>, ParseError>,
+    //     left_delimiter: Token,
+    //     right_delimiter: Token,
+    // ) -> Result<(Spanned<T>, Span), ParseError> {
+    //     if self.lookahead_match_tokens(&vec![left_delimiter.clone()]) {
+    //         self.macroparse_wrap_delimiters(parse, left_delimiter, right_delimiter)
+    //     } else {
+    //         let (innie, innie_span) = parse(self)?;
+    //         Ok(((innie, innie_span.clone()), innie_span))
+    //     }
+    // }
 
     fn macroparse_wrap_delimiters<T>(
         &mut self,
@@ -440,12 +420,7 @@ impl<'src> Parser<'src> {
                 (|l| Lhs::DerefRef(l, ())) as fn(Box<Spanned<Lhs<()>>>) -> Lhs<()>,
             ),
         ];
-        self.macroparse_operator_unary_prefix_hom(
-            uops,
-            Self::parse_lhs,
-            "parse an lhs_dereference".to_string(),
-            self.left_span.clone(),
-        )
+        self.macroparse_operator_unary_prefix_hom(uops, Self::parse_lhs)
     }
 
     fn parse_lhs_index(&mut self) -> Result<Spanned<Lhs<()>>, ParseError> {
@@ -649,8 +624,6 @@ impl<'src> Parser<'src> {
         self.macroparse_operator_unary_prefix_hom(
             vec![(Token::Bang, |e| Expr::Bang(e, ()))],
             Self::parse_expr_index,
-            "parse a bang boolean expression".to_string(),
-            self.left_span.clone(),
         )
     }
 
@@ -678,8 +651,6 @@ impl<'src> Parser<'src> {
         self.macroparse_operator_unary_prefix_hom(
             vec![(Token::Minus, |e| Expr::Neg(e, ()))],
             Self::parse_expr_or,
-            "parse a uminus arithmetic expression".to_string(),
-            self.left_span.clone(),
         )
     }
 
