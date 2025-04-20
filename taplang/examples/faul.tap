@@ -1,0 +1,6 @@
+
+fn foo(x: int, y: (bool, int)): unit [][] {
+    let x:int = alloc(4);
+    rawr-error   let y: unit = free(x.4);
+    skip; return 1
+}

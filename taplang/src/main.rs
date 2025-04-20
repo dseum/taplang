@@ -36,7 +36,7 @@ fn main() {
         .filter(|st| st.0 != Token::Whitespace)
         .collect::<VecDeque<_>>();
 
-    match Parser::new(&src, &mut sanitized_toks, (0..src.len())).parse_function() {
+    match Parser::new(&src, &mut sanitized_toks, (0..src.len())).parse_command() {
         Ok(file_ast) => println!("AST: {:?}", file_ast),
         Err(e) => e.msg(),
     }

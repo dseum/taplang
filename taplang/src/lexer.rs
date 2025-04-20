@@ -66,8 +66,6 @@ pub enum Token {
     DColon,
     #[token(":")]
     Colon,
-    #[token(";;")]
-    DScolon,
     // command constructs
     #[token("type", priority = 1)]
     TypeDef,
@@ -107,7 +105,8 @@ pub enum Token {
     // Functions
     #[token("fn", priority = 1)]
     FnDef,
-    #[token("return", priority = 1)]
+    // #[token("return", priority = 1)]
+    #[regex(r";\sreturn", priority = 1)]
     Return,
     // Impl
     #[token("[")]
@@ -141,7 +140,7 @@ pub enum Token {
     Hsepconj,
     #[token("-*", priority = 1)]
     Hmagicwand,
-    Error
+    Error,
 }
 
 impl std::fmt::Display for Token {
@@ -164,7 +163,6 @@ impl std::fmt::Display for Token {
             Self::LessThan => write!(f, "<"),
             Self::GreaterThan => write!(f, ">"),
             Self::Semicolon => write!(f, ";"),
-            Self::DScolon => write!(f, ";;"),
             Self::Colon => write!(f, ":"),
             Self::And => write!(f, "&&"),
             Self::Bang => write!(f, "!"),

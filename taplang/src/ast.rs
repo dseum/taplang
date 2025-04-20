@@ -50,8 +50,6 @@ pub enum Expr<T> {
     MutRef(String, T),
     Tuple(Vec<Spanned<Self>>, T),
     Unit(T),
-    Alloc(Box<Spanned<Self>>, T),
-    Free(Box<Spanned<Lhs<T>>>, T),
     Call(String, Vec<Spanned<Self>>, T),
     BoundCall(String, String, Vec<Spanned<Self>>, T),
     // booleans
@@ -70,6 +68,12 @@ pub enum Expr<T> {
     Mult(Box<Spanned<Self>>, Box<Spanned<Self>>, T),
     Div(Box<Spanned<Self>>, Box<Spanned<Self>>, T),
 }
+#[derive(Debug, Clone)]
+pub enum KExpr<T> {
+    Expr(Box<Spanned<Expr<T>>>),
+    Alloc(Box<Spanned<Expr<T>>>, T),
+    Free(Box<Spanned<Lhs<T>>>, T),
+}
 impl<T> Expr<T> {
     pub fn get_type(&self) -> &T {
         use Expr::*;
@@ -80,8 +84,6 @@ impl<T> Expr<T> {
             MutRef(_, t) => t,
             Tuple(_, t) => t,
             Unit(t) => t,
-            Alloc(_, t) => t,
-            Free(_, t) => t,
             Call(_, _, t) => t,
             BoundCall(_, _, _, t) => t,
             True(t) => t,
@@ -133,32 +135,47 @@ pub struct FnDef<T>(
 
 #[derive(Debug, Clone)]
 pub struct ImplFnDef<T>(
-    pub String,
-    pub Vec<(String, Type)>,
-    pub Box<Type>,
-    pub Box<HeapPre>,
-    pub Box<HeapPost>,
-    pub Box<Cmd<T>>,
-    pub Box<Expr<T>>,
+    pub Spanned<String>,
+    pub Vec<Spanned<(String, Type)>>,
+    pub Box<Spanned<Type>>,
+    pub Box<Spanned<HeapPre>>,
+    pub Box<Spanned<HeapPost>>,
+    pub Box<Spanned<KCmd<T>>>,
+    pub Box<Spanned<Expr<T>>>,
 );
 
 #[derive(Debug, Clone)]
 pub enum Decl<T> {
-    TypeDef(String, Vec<Type>),
-    TypeImpl(String, HeapPred, Vec<ImplFnDef<T>>),
+    TypeDef(Spanned<String>, Vec<Spanned<Type>>),
+    TypeImpl(
+        Spanned<String>,
+        Spanned<HeapPred>,
+        Vec<Spanned<ImplFnDef<T>>>,
+    ),
 }
 
 #[derive(Debug, Clone)]
 pub enum Cmd<T> {
-    TypeDecl(Box<Decl<T>>),
-    FxnDefin(Box<FnDef<T>>),
+    TypeDecl(Box<Spanned<Decl<T>>>),
+    FxnDefin(Box<Spanned<FnDef<T>>>),
     Skip,
     Scope(Box<Spanned<Self>>),
-    Assign(Box<Lhs<T>>, Box<Expr<T>>),
+    Assign(Box<Spanned<Lhs<T>>>, Box<Spanned<Expr<T>>>),
     Sequence(Box<Spanned<Self>>, Box<Spanned<Self>>),
-    Let(String, Box<Type>, Box<Expr<T>>),
-    LetMut(String, Box<Type>, Box<Expr<T>>),
-    While(Box<Expr<T>>, Box<Spanned<Self>>),
-    If(Box<Expr<T>>, Box<Spanned<Self>>, Box<Spanned<Self>>),
-    Lemma(Box<HeapPred>),
+    Let(Spanned<String>, Box<Spanned<Type>>, Box<Spanned<Expr<T>>>),
+    LetMut(Spanned<String>, Box<Spanned<Type>>, Box<Spanned<Expr<T>>>),
+    While(Box<Spanned<Expr<T>>>, Box<Spanned<Self>>),
+    If(Box<Spanned<Expr<T>>>, Box<Spanned<Self>>, Box<Spanned<Self>>),
+}
+#[derive(Debug, Clone)]
+pub enum KCmd<T> {
+    Skip,
+    Scope(Box<Spanned<Self>>),
+    Assign(Box<Spanned<Lhs<T>>>, Box<Spanned<KExpr<T>>>),
+    Sequence(Box<Spanned<Self>>, Box<Spanned<Self>>),
+    Let(Spanned<String>, Box<Spanned<Type>>, Box<Spanned<KExpr<T>>>),
+    LetMut(Spanned<String>, Box<Spanned<Type>>, Box<Spanned<KExpr<T>>>),
+    While(Box<Spanned<Expr<T>>>, Box<Spanned<Self>>),
+    If(Box<Spanned<Expr<T>>>, Box<Spanned<Self>>, Box<Spanned<Self>>),
+    Lemma(Box<Spanned<HeapPred>>),
 }

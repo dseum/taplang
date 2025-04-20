@@ -1,5 +1,9 @@
-skip; '
-a'
-
-3
-4 + 5;
+skip; l = 4; skip; let x: int = 4; while 4 < 5 + 2 { skip ; let mut a : bool = true }; type Color(int, bool); 
+if 7 < 3 == 3 {skip; skip} else {skip};
+impl Color [emp] {
+    fn foo(x: int, y: (bool, int)): unit [][] {
+        let x:int = alloc(4);
+        let y: unit = free(x.4);
+        skip; return 1
+    }
+}
