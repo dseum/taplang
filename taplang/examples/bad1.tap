@@ -1,0 +1,1 @@
+foo.4 = bad + 3; skip; {let x = 3}

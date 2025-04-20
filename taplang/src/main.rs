@@ -1,7 +1,6 @@
 mod ast;
 mod lexer;
 mod parser;
-use std::collections::VecDeque;
 
 // mod typer;
 // mod eval;
@@ -12,8 +11,9 @@ use parser::Parser;
 // use typer::Gamma;
 
 fn main() {
-    let usage = "Run `cargo run --examples/sample.tap`";
-    let src = std::fs::read_to_string(std::env::args().nth(1).expect(usage)).expect(usage);
+    // let usage = "Run `cargo run --examples/sample.tap`";
+    // let src = std::fs::read_to_string(std::env::args().nth(1).expect(usage)).expect(usage);
+    let src = std::fs::read_to_string("examples/fat.tap").unwrap();
 
     let token_iter = Token::lexer(&src).spanned().map(|(tok, span)| match tok {
         Ok(tok) => (tok, span),
@@ -34,13 +34,26 @@ fn main() {
         .filter(|st| st.0 != Token::Whitespace)
         .collect::<Vec<_>>();
 
-    let mut p = Parser::new(&src, &sanitized_toks, 0..src.len());
-    match p.parse_command() {
-        Ok(file_ast) => println!("AST: {:?}", file_ast),
+    let mut par = Parser::new(&src, &sanitized_toks);
+
+
+    let start = std::time::Instant::now();
+    let cmd = par.parse_command();
+    println!("Parsed in {:?}", start.elapsed());
+
+    match cmd {
+        Ok(file_ast) => {
+            if par.pos >= sanitized_toks.len() {
+                println!("AST: {:?}", file_ast.1)
+            } else {
+                println!("parsing ended abruptly. exited early to recover fragment:\n{:?}", file_ast.1)
+            }
+            
+        },
         Err(e) => e.msg(),
     }
 
-    println!("posssss :         {}", p.pos);
+    println!("posssss :         {}", par.pos);
 
     // println!("TOKENS: {:?}", token_stream);
 
