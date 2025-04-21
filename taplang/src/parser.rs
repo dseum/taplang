@@ -80,6 +80,16 @@ impl<'src> Parser<'src> {
         }
     }
 
+    fn build_error(&self, span: Span, message: String, ctx: impl FnOnce() -> String) -> ParseError {
+        let code = ParseError::excerpt(self.src, &span);
+        ParseError {
+            span,
+            message,
+            code,
+            ctx: ctx(),
+        }
+    }
+
     fn get_curr_span(&self) -> Span {
         if let Some((_, span)) = self.tokens.get(self.pos) {
             span.to_owned()
@@ -91,14 +101,16 @@ impl<'src> Parser<'src> {
     fn peek(&self) -> Option<&Spanned<Token>> {
         self.tokens.get(self.pos)
     }
-
-    fn build_error(&self, span: Span, message: String, ctx: &str) -> ParseError {
-        let code = ParseError::excerpt(self.src, &span);
-        ParseError {
-            span,
-            message,
-            code,
-            ctx: ctx.to_owned(),
+    fn peek_token_res(&self, ctx: &str) -> Result<&Token, ParseError> {
+        if let Some((x, _)) = self.tokens.get(self.pos) {
+            Ok(&x)
+        } else {
+            let ctx_thunk = || format!("{}", ctx);
+            Err(self.build_error(
+                self.get_curr_span(),
+                "Unexpected EOF.".to_string(),
+                ctx_thunk,
+            ))
         }
     }
 
@@ -107,7 +119,12 @@ impl<'src> Parser<'src> {
             self.pos += 1;
             Ok((tok, span))
         } else {
-            Err(self.build_error(self.get_curr_span(), format!("Unexpected EOF."), ctx))
+            let ctx_thunk = || format!("{}", ctx);
+            Err(self.build_error(
+                self.get_curr_span(),
+                "Unexpected EOF.".to_string(),
+                ctx_thunk,
+            ))
         }
     }
 
@@ -116,10 +133,11 @@ impl<'src> Parser<'src> {
         if std::mem::discriminant(expected) == std::mem::discriminant(&next_tok) {
             Ok((next_tok, tok_span))
         } else {
+            let ctx_thunk = || format!("{}", ctx);
             Err(self.build_error(
                 tok_span,
                 format!("Expected `{}`, but found `{}`", expected, next_tok),
-                ctx,
+                ctx_thunk,
             ))
         }
     }
@@ -139,7 +157,7 @@ impl<'src> Parser<'src> {
     fn metaparse_separated_by<T>(
         &mut self,
         inner: fn(&mut Self) -> Result<Spanned<T>, ParseError>,
-        sep: Token,
+        sep: &Token,
         allow_trailing_sep: bool,
         min_sep_occur: usize,
     ) -> Result<Vec<Spanned<T>>, ParseError> {
@@ -163,7 +181,7 @@ impl<'src> Parser<'src> {
         }
 
         loop {
-            if !self.lookahead_match_tokens(&[sep.clone()]) {
+            if !self.lookahead_match_tokens(&[sep]) {
                 break;
             }
             let _ = self.next(&format!("consume `{}`", sep))?;
@@ -191,8 +209,8 @@ impl<'src> Parser<'src> {
             let message = format!(
                 "expected at least {min_sep_occur} `{sep}` separator(s), but only found {seps} many"
             );
-            let ctx = &format!("parse list separated by `{sep}`");
-            Err(self.build_error(span, message, ctx))
+            let ctx_thunk = || format!("parse list separated by `{sep}`");
+            Err(self.build_error(span, message, ctx_thunk))
         } else {
             Ok(items)
         }
@@ -252,7 +270,7 @@ impl<'src> Parser<'src> {
         while self.tokens.len() > 0 {
             let mut is_handled = false;
             for (uop_tok, uop_f) in uops.iter() {
-                if self.lookahead_match_tokens(&[uop_tok.clone()]) {
+                if self.lookahead_match_tokens(&[uop_tok]) {
                     let (_, t_span) =
                         self.expect(uop_tok, "(internal-error) this should never fail")?;
                     fxns.push((uop_f, t_span));
@@ -290,14 +308,11 @@ impl<'src> Parser<'src> {
         while self.tokens.len() > 0 {
             let mut is_handled = false;
             for (bop_poss_tok, bop_poss_fn) in bops.iter() {
-                if self.lookahead_match_tokens(&[bop_poss_tok.clone()]) {
+                if self.lookahead_match_tokens(&[bop_poss_tok]) {
                     self.expect(bop_poss_tok, ctx)?;
                     let (inner, inner_span) = parse_rhs(self)?;
                     curr = (
-                        bop_poss_fn(
-                            Box::new(curr),
-                            Box::new((inner, inner_span.clone())),
-                        ),
+                        bop_poss_fn(Box::new(curr), Box::new((inner, inner_span.clone()))),
                         start_span.start..inner_span.end,
                     );
                     is_handled = true;
@@ -311,7 +326,7 @@ impl<'src> Parser<'src> {
         Ok(curr)
     }
 
-    fn lookahead_match_tokens(&self, toks: &[Token]) -> bool {
+    fn lookahead_match_tokens(&self, toks: &[&Token]) -> bool {
         toks.iter()
             .enumerate()
             .all(|(i, tok)| match self.tokens.get(self.pos + i) {
@@ -375,7 +390,29 @@ impl<'src> Parser<'src> {
     //     }
     // }
 
-    fn lookahead_comma_before_rparen(&self) -> bool {
+    fn lookahead_semicolon_outside_scope(&self) -> bool {
+        let mut depth = 0;
+
+        for &(ref tok, _) in self.tokens.iter().skip(self.pos) {
+            match tok {
+                Token::LCurBra => depth += 1,
+                Token::RCurBra => {
+                    if depth > 0 {
+                        depth -= 1;
+                    } else {
+                        // Unexpected unmatched RCurBra; conservative: break
+                        break;
+                    }
+                }
+                Token::Semicolon if depth == 0 => return true,
+                _ => {}
+            }
+        }
+
+        false
+    }
+
+    fn lookahead_inparen_comma_before_rparen(&self) -> bool {
         let mut depth = 0;
         for &(ref tok, _) in self.tokens.iter().skip(self.pos) {
             match tok {
@@ -423,7 +460,7 @@ impl<'src> Parser<'src> {
     }
 
     fn parse_lhs_atom(&mut self) -> Result<Spanned<Lhs<()>>, ParseError> {
-        if self.lookahead_match_tokens(&[Token::LParen]) {
+        if self.lookahead_match_tokens(&[&Token::LParen]) {
             let ((lhs, _lhs_span), delim_lhs_span) =
                 self.macroparse_wrap_delimiters(Self::parse_lhs, &Token::LParen, &Token::RParen)?;
             Ok((lhs, delim_lhs_span))
@@ -474,11 +511,9 @@ impl<'src> Parser<'src> {
     }
 
     pub fn parse_lhs(&mut self) -> Result<Spanned<Lhs<()>>, ParseError> {
-        if self.lookahead_match_tokens(&[Token::At]) || self.lookahead_match_tokens(&[Token::Star])
-        {
-            self.parse_lhs_deref()
-        } else {
-            self.parse_lhs_index()
+        match self.peek_token_res("parse an lhs")? {
+            &Token::At | &Token::Star => self.parse_lhs_deref(),
+            _ => self.parse_lhs_index(),
         }
     }
 
@@ -511,8 +546,8 @@ impl<'src> Parser<'src> {
 
                 let span = unexp_span;
 
-                let ctx = "parse a value literal";
-                Err(self.build_error(span, message, ctx))
+                let ctx_thunk = || String::from("parse a value literal");
+                Err(self.build_error(span, message, ctx_thunk))
             }
         }
     }
@@ -592,12 +627,12 @@ impl<'src> Parser<'src> {
     }
 
     pub fn parse_expr_atom(&mut self) -> Result<Spanned<Expr<()>>, ParseError> {
-        if self.lookahead_match_tokens(&[Token::LParen]) {
-            if self.lookahead_match_tokens(&[Token::LParen, Token::RParen]) {
+        if self.lookahead_match_tokens(&[&Token::LParen]) {
+            if self.lookahead_match_tokens(&[&Token::LParen, &Token::RParen]) {
                 // unit `()`
                 return self.parse_expr_val();
-            } else if self.lookahead_match_tokens(&[Token::LParen])
-                && self.lookahead_comma_before_rparen()
+            } else if self.lookahead_match_tokens(&[&Token::LParen])
+                && self.lookahead_inparen_comma_before_rparen()
             {
                 println!("trigger");
                 // tuple `(e1, e2, …)`
@@ -611,18 +646,18 @@ impl<'src> Parser<'src> {
                 )?;
                 return Ok((inner, span));
             }
-        } else if self.lookahead_match_tokens(&[Token::Amp, Token::Mut]) {
+        } else if self.lookahead_match_tokens(&[&Token::Amp, &Token::Mut]) {
             self.parse_expr_mut_ref()
-        } else if self.lookahead_match_tokens(&[Token::Amp]) {
+        } else if self.lookahead_match_tokens(&[&Token::Amp]) {
             self.parse_expr_immut_ref()
         } else if self.lookahead_match_tokens(&[
-            Token::Var(String::new()),
-            Token::DColon,
-            Token::Var(String::new()),
-            Token::LParen,
+            &Token::Var(String::new()),
+            &Token::DColon,
+            &Token::Var(String::new()),
+            &Token::LParen,
         ]) {
             self.parse_expr_bound_call()
-        } else if self.lookahead_match_tokens(&[Token::Var(String::new()), Token::LParen]) {
+        } else if self.lookahead_match_tokens(&[&Token::Var(String::new()), &Token::LParen]) {
             self.parse_expr_call()
         } else if self.lookahead_is_lhs() {
             self.parse_expr_lvalue()
@@ -719,7 +754,7 @@ impl<'src> Parser<'src> {
             };
 
         fn args(p: &mut Parser) -> Result<Vec<Spanned<Expr<()>>>, ParseError> {
-            p.metaparse_separated_by(Parser::parse_expr, Token::Comma, false, 0)
+            p.metaparse_separated_by(Parser::parse_expr, &Token::Comma, false, 0)
         }
 
         let (v, v_span) = self.macroparse_wrap_delimiters(args, &Token::LParen, &Token::RParen)?;
@@ -737,7 +772,7 @@ impl<'src> Parser<'src> {
             };
 
         fn args(p: &mut Parser) -> Result<Vec<Spanned<Expr<()>>>, ParseError> {
-            p.metaparse_separated_by(Parser::parse_expr, Token::Comma, false, 0)
+            p.metaparse_separated_by(Parser::parse_expr, &Token::Comma, false, 0)
         }
 
         let (v, v_span) = self.macroparse_wrap_delimiters(args, &Token::LParen, &Token::RParen)?;
@@ -747,7 +782,7 @@ impl<'src> Parser<'src> {
     }
     pub fn parse_expr_tuple(&mut self) -> Result<Spanned<Expr<()>>, ParseError> {
         fn elements(p: &mut Parser) -> Result<Vec<Spanned<Expr<()>>>, ParseError> {
-            p.metaparse_separated_by(Parser::parse_expr, Token::Comma, true, 1)
+            p.metaparse_separated_by(Parser::parse_expr, &Token::Comma, true, 1)
         }
 
         let (v, span) =
@@ -761,13 +796,13 @@ impl<'src> Parser<'src> {
     }
 
     pub fn parse_kexpr(&mut self) -> Result<Spanned<KExpr<()>>, ParseError> {
-        if self.lookahead_match_tokens(&[Token::Free]) {
-            self.parse_kexpr_free()
-        } else if self.lookahead_match_tokens(&[Token::Alloc]) {
-            self.parse_kexpr_alloc()
-        } else {
-            let (e, e_span) = self.parse_expr()?;
-            Ok((KExpr::Expr(Box::new((e, e_span.clone()))), e_span))
+        match self.peek_token_res("parse a kexpr")? {
+            &Token::Free => self.parse_kexpr_free(),
+            &Token::Alloc => self.parse_kexpr_alloc(),
+            _ => {
+                let (e, e_span) = self.parse_expr()?;
+                Ok((KExpr::Expr(Box::new((e, e_span.clone()))), e_span))
+            }
         }
     }
 
@@ -820,15 +855,15 @@ impl<'src> Parser<'src> {
                     unexpected_tok
                 );
 
-                let ctx = "parse a primitive type or a custom type";
-                Err(self.build_error(span, message, ctx))
+                let ctx_thunk = || String::from("parse a primitive type or a custom type");
+                Err(self.build_error(span, message, ctx_thunk))
             }
         }
     }
     pub fn parse_type(&mut self) -> Result<Spanned<Type>, ParseError> {
-        if self.lookahead_match_tokens(&[Token::LParen]) {
+        if self.lookahead_match_tokens(&[&Token::LParen]) {
             fn elements(p: &mut Parser) -> Result<Vec<Spanned<Type>>, ParseError> {
-                p.metaparse_separated_by(Parser::parse_type, Token::Comma, true, 1)
+                p.metaparse_separated_by(Parser::parse_type, &Token::Comma, true, 1)
             }
             let (v, v_span) =
                 self.macroparse_wrap_delimiters(elements, &Token::LParen, &Token::RParen)?;
@@ -844,7 +879,7 @@ impl<'src> Parser<'src> {
     }
 
     pub fn parse_pre_cond(&mut self) -> Result<Spanned<HeapPre>, ParseError> {
-        if self.lookahead_match_tokens(&[Token::Pre]) {
+        if self.lookahead_match_tokens(&[&Token::Pre]) {
             let (_, pre_span) = self.expect(&Token::Pre, "parse a heap precondition")?;
             let (hp_pred, hp_pred_span) = self.parse_heap_pred()?;
             Ok((
@@ -860,7 +895,7 @@ impl<'src> Parser<'src> {
     }
 
     pub fn parse_post_cond(&mut self) -> Result<Spanned<HeapPost>, ParseError> {
-        if self.lookahead_match_tokens(&[Token::Post]) {
+        if self.lookahead_match_tokens(&[&Token::Post]) {
             let (_, post_span) = self.expect(&Token::Post, "parse a heap postcondition")?;
             let (hp_pred, hp_pred_span) = self.parse_heap_pred()?;
             Ok((
@@ -896,7 +931,7 @@ impl<'src> Parser<'src> {
             };
 
         fn args(p: &mut Parser) -> Result<Vec<Spanned<(String, Type)>>, ParseError> {
-            p.metaparse_separated_by(Parser::parse_typed_arg, Token::Comma, false, 0)
+            p.metaparse_separated_by(Parser::parse_typed_arg, &Token::Comma, false, 0)
         }
         let (spanned_typed_args, _delim_ty_args_span) =
             self.macroparse_wrap_delimiters(args, &Token::LParen, &Token::RParen)?;
@@ -940,7 +975,7 @@ impl<'src> Parser<'src> {
             };
 
         fn args(p: &mut Parser) -> Result<Vec<Spanned<(String, Type)>>, ParseError> {
-            p.metaparse_separated_by(Parser::parse_typed_arg, Token::Comma, false, 0)
+            p.metaparse_separated_by(Parser::parse_typed_arg, &Token::Comma, false, 0)
         }
         let (spanned_typed_args, _delim_ty_args_span) =
             self.macroparse_wrap_delimiters(args, &Token::LParen, &Token::RParen)?;
@@ -984,7 +1019,7 @@ impl<'src> Parser<'src> {
     }
 
     fn parse_decl(&mut self) -> Result<Spanned<Decl<()>>, ParseError> {
-        if self.lookahead_match_tokens(&[Token::TypeDef]) {
+        if self.lookahead_match_tokens(&[&Token::TypeDef]) {
             let (_, decl_span) = self.expect(&Token::TypeDef, "parse a type definition")?;
 
             let spanned_name =
@@ -994,13 +1029,13 @@ impl<'src> Parser<'src> {
                 };
 
             fn types(p: &mut Parser) -> Result<Vec<Spanned<Type>>, ParseError> {
-                p.metaparse_separated_by(Parser::parse_type, Token::Comma, false, 0)
+                p.metaparse_separated_by(Parser::parse_type, &Token::Comma, false, 0)
             }
             let (v, v_span) =
                 self.macroparse_wrap_delimiters(types, &Token::LParen, &Token::RParen)?;
             let span = decl_span.start..v_span.end;
             Ok((Decl::TypeDef(spanned_name, v), span))
-        } else if self.lookahead_match_tokens(&[Token::Impl]) {
+        } else if self.lookahead_match_tokens(&[&Token::Impl]) {
             let (_, impl_span) = self.expect(&Token::Impl, "parse a type implementation")?;
 
             let spanned_name =
@@ -1016,7 +1051,7 @@ impl<'src> Parser<'src> {
             )?;
 
             fn implfxns(p: &mut Parser) -> Result<Vec<Spanned<ImplFnDef<()>>>, ParseError> {
-                p.metaparse_separated_by(Parser::parse_impl_function, Token::Comma, true, 0)
+                p.metaparse_separated_by(Parser::parse_impl_function, &Token::Comma, true, 0)
             }
             let (methods, m_span) =
                 self.macroparse_wrap_delimiters(implfxns, &Token::LCurBra, &Token::RCurBra)?;
@@ -1034,8 +1069,8 @@ impl<'src> Parser<'src> {
                 Token::Impl,
                 unexpected_tok
             );
-            let ctx = "parse a declaration";
-            Err(self.build_error(span, message, ctx))
+            let ctx_thunk = || String::from("parse a declaration");
+            Err(self.build_error(span, message, ctx_thunk))
         }
     }
 
@@ -1062,7 +1097,7 @@ impl<'src> Parser<'src> {
             self.expect(&Token::While, &format!("parse a while {}", grammar_part))?;
         let spanned_cond = self.parse_expr()?;
 
-        if !self.lookahead_match_tokens(&[Token::LCurBra]) {
+        if !self.lookahead_match_tokens(&[&Token::LCurBra]) {
             let (unexpected_tok, span) =
                 self.next(&format!("parse a while {}'s body", grammar_part))?;
             let message = format!(
@@ -1070,8 +1105,8 @@ impl<'src> Parser<'src> {
                 Token::LCurBra,
                 unexpected_tok
             );
-            let ctx = &format!("parse a while {}'s body", grammar_part);
-            Err(self.build_error(span, message, ctx))?;
+            let ctx_thunk = || format!("parse a while {}'s body", grammar_part);
+            Err(self.build_error(span, message, ctx_thunk))?;
         }
         let ((body, body_inside_span), body_span) =
             self.macroparse_wrap_delimiters(body_parser, &Token::LCurBra, &Token::RCurBra)?;
@@ -1091,7 +1126,7 @@ impl<'src> Parser<'src> {
 
         let spanned_cond = self.parse_expr()?;
 
-        if !self.lookahead_match_tokens(&[Token::LCurBra]) {
+        if !self.lookahead_match_tokens(&[&Token::LCurBra]) {
             let (unexpected_tok, span) =
                 self.next(&format!("parse an if {}'s then branch", grammar_part))?;
             let message = format!(
@@ -1099,8 +1134,8 @@ impl<'src> Parser<'src> {
                 Token::LCurBra,
                 unexpected_tok
             );
-            let ctx = &format!("parse an if {}'s then branch", grammar_part);
-            Err(self.build_error(span, message, ctx))?;
+            let ctx_thunk = || format!("parse an if {}'s then branch", grammar_part);
+            Err(self.build_error(span, message, ctx_thunk))?;
         }
         let ((then_body, then_body_span), _) =
             self.macroparse_wrap_delimiters(body_parser, &Token::LCurBra, &Token::RCurBra)?;
@@ -1110,7 +1145,7 @@ impl<'src> Parser<'src> {
             &format!("parse an if {}'s else branch", grammar_part),
         )?;
 
-        if !self.lookahead_match_tokens(&[Token::LCurBra]) {
+        if !self.lookahead_match_tokens(&[&Token::LCurBra]) {
             let (unexpected_tok, span) =
                 self.next(&format!("parse an if {}'s else branch", grammar_part))?;
             let message = format!(
@@ -1118,8 +1153,8 @@ impl<'src> Parser<'src> {
                 Token::LCurBra,
                 unexpected_tok
             );
-            let ctx = &format!("parse an if {}'s else branch", grammar_part);
-            Err(self.build_error(span, message, ctx))?;
+            let ctx_thunk = || format!("parse an if {}'s else branch", grammar_part);
+            Err(self.build_error(span, message, ctx_thunk))?;
         }
         let ((else_body, else_body_span), else_delim_body_span) =
             self.macroparse_wrap_delimiters(body_parser, &Token::LCurBra, &Token::RCurBra)?;
@@ -1259,40 +1294,42 @@ impl<'src> Parser<'src> {
     }
 
     pub fn parse_command_atom(&mut self) -> Result<Spanned<Cmd<()>>, ParseError> {
-        if self.lookahead_match_tokens(&[Token::LCurBra]) {
-            self.parse_generic_scope(Cmd::Scope, |p| p.parse_command())
-        } else if self.lookahead_match_tokens(&[Token::TypeDef])
-            || self.lookahead_match_tokens(&[Token::Impl])
-        {
-            self.parse_command_decl()
-        } else if self.lookahead_match_tokens(&[Token::While]) {
-            self.parse_generic_while(Cmd::While, |p| p.parse_command(), "command")
-        } else if self.lookahead_match_tokens(&[Token::FnDef]) {
-            self.parse_command_fn()
-        } else if self.lookahead_match_tokens(&[Token::If]) {
-            self.parse_generic_if(Cmd::If, |p| p.parse_command(), "command")
-        } else if self.lookahead_match_tokens(&[Token::Let]) {
-            if self.lookahead_match_tokens(&[Token::Let, Token::Mut]) {
-                self.parse_generic_let_mut(Cmd::LetMut, |p| p.parse_expr(), "command")
-            } else {
-                self.parse_generic_let(Cmd::Let, |p| p.parse_expr(), "command")
+        match self.peek_token_res("parse a command")? {
+            &Token::LCurBra => self.parse_generic_scope(Cmd::Scope, |p| p.parse_command()),
+            &Token::TypeDef | &Token::Impl => self.parse_command_decl(),
+            &Token::While => self.parse_generic_while(Cmd::While, |p| p.parse_command(), "command"),
+            &Token::FnDef => self.parse_command_fn(),
+            &Token::If => self.parse_generic_if(Cmd::If, |p| p.parse_command(), "command"),
+            &Token::Let => {
+                if self.lookahead_match_tokens(&[&Token::Let, &Token::Mut]) {
+                    self.parse_generic_let_mut(Cmd::LetMut, |p| p.parse_expr(), "command")
+                } else {
+                    self.parse_generic_let(Cmd::Let, |p| p.parse_expr(), "command")
+                }
             }
-        } else if self.lookahead_is_lhs() {
-            self.parse_generic_assign(Cmd::Assign, |p| p.parse_expr(), "command")
-        } else {
-            let (_, sk_span) = self.expect(&Token::Skip, "parse a non-sequence command")?;
-            Ok((Cmd::Skip, sk_span))
+            &Token::Skip => {
+                let (_, sk_span) = self.expect(&Token::Skip, "parse a non-sequence command")?;
+                Ok((Cmd::Skip, sk_span))
+            }
+            _ => self.parse_generic_assign(Cmd::Assign, |p| p.parse_expr(), "command"),
         }
     }
 
     pub fn parse_command(&mut self) -> Result<Spanned<Cmd<()>>, ParseError> {
-        self.macroparse_operator_binary_infix_left_assoc(
-            vec![(Token::Semicolon, |c1, c2| Cmd::Sequence(c1, c2))],
-            Self::parse_command_atom,
-            Self::parse_command_atom,
-            "parse a sequence of commands",
-            self.get_curr_span(),
-        )
+        let (c, c_span) = self.parse_command_atom()?;
+        if !self.lookahead_match_tokens(&vec![&Token::Semicolon]) {
+            Ok((c, c_span))
+        } else {
+            let mut spanned_cmds: Vec<Spanned<Cmd<()>>> = vec![];
+            spanned_cmds.push((c, c_span));
+            while self.lookahead_match_tokens(&vec![&Token::Semicolon]) {
+                self.expect(&Token::Semicolon, "parse a sequence of commands")?;
+                spanned_cmds.push(self.parse_command_atom()?);
+            }
+            let start = spanned_cmds.first().unwrap().1.start;
+            let end = spanned_cmds.last().unwrap().1.end;
+            Ok((Cmd::Sequence(spanned_cmds), start..end))
+        }
     }
 
     fn parse_kcommand_lemma(&mut self) -> Result<Spanned<KCmd<()>>, ParseError> {
@@ -1303,39 +1340,67 @@ impl<'src> Parser<'src> {
     }
 
     pub fn parse_kcommand_atom(&mut self) -> Result<Spanned<KCmd<()>>, ParseError> {
-        if self.lookahead_match_tokens(&[Token::LCurBra]) {
-            self.parse_generic_scope(KCmd::Scope, |p| p.parse_kcommand())
-        } else if self.lookahead_match_tokens(&[Token::While]) {
-            self.parse_generic_while(KCmd::While, |p| p.parse_kcommand(), "k-command")
-        } else if self.lookahead_match_tokens(&[Token::If]) {
-            self.parse_generic_if(KCmd::If, |p| p.parse_kcommand(), "k-command")
-        } else if self.lookahead_match_tokens(&[Token::Let]) {
-            if self.lookahead_match_tokens(&[Token::Let, Token::Mut]) {
-                self.parse_generic_let_mut(
-                    KCmd::LetMut,
-                    |p| p.parse_kexpr(),
-                    "k-command",
-                )
-            } else {
-                self.parse_generic_let(KCmd::Let, |p| p.parse_kexpr(), "k-command")
+        match self.peek_token_res("parse a k-command")? {
+            &Token::LCurBra => self.parse_generic_scope(KCmd::Scope, |p| p.parse_kcommand()),
+            &Token::While => {
+                self.parse_generic_while(KCmd::While, |p| p.parse_kcommand(), "k-command")
             }
-        } else if self.lookahead_match_tokens(&[Token::Lemma]) {
-            self.parse_kcommand_lemma()
-        } else if self.lookahead_is_lhs() {
-            self.parse_generic_assign(KCmd::Assign, |p| p.parse_kexpr(), "k-command")
-        } else {
-            let (_, sk_span) = self.expect(&Token::Skip, "parse a non-sequence k-command")?;
-            Ok((KCmd::Skip, sk_span))
+            &Token::If => self.parse_generic_if(KCmd::If, |p| p.parse_kcommand(), "k-command"),
+            &Token::Let => {
+                if self.lookahead_match_tokens(&[&Token::Let, &Token::Mut]) {
+                    self.parse_generic_let_mut(KCmd::LetMut, |p| p.parse_kexpr(), "k-command")
+                } else {
+                    self.parse_generic_let(KCmd::Let, |p| p.parse_kexpr(), "k-command")
+                }
+            }
+            &Token::Lemma => self.parse_kcommand_lemma(),
+            &Token::Skip => {
+                let (_, sk_span) = self.expect(&Token::Skip, "parse a non-sequence k-command")?;
+                Ok((KCmd::Skip, sk_span))
+            }
+            _ => self.parse_generic_assign(KCmd::Assign, |p| p.parse_kexpr(), "k-command"),
         }
     }
 
     pub fn parse_kcommand(&mut self) -> Result<Spanned<KCmd<()>>, ParseError> {
-        self.macroparse_operator_binary_infix_left_assoc(
-            vec![(Token::Semicolon, |c1, c2| KCmd::Sequence(c1, c2))],
-            Self::parse_kcommand_atom,
-            Self::parse_kcommand_atom,
-            "parse a sequence of k-commands",
-            self.get_curr_span(),
-        )
+        let (kc, kc_span) = self.parse_kcommand_atom()?;
+        if !self.lookahead_match_tokens(&vec![&Token::Semicolon]) {
+            Ok((kc, kc_span))
+        } else {
+            let mut spanned_kcmds: Vec<Spanned<KCmd<()>>> = vec![];
+            spanned_kcmds.push((kc, kc_span));
+            while self.lookahead_match_tokens(&vec![&Token::Semicolon]) {
+                self.expect(&Token::Semicolon, "parse a sequence of commands")?;
+                spanned_kcmds.push(self.parse_kcommand_atom()?);
+            }
+            let start = spanned_kcmds.first().unwrap().1.start;
+            let end = spanned_kcmds.last().unwrap().1.end;
+            Ok((KCmd::Sequence(spanned_kcmds), start..end))
+        }
+
+        // let span_start = self.get_curr_span().start;
+
+        // let spanned_kcmds = self.metaparse_separated_by(
+        //     Self::parse_kcommand_atom,
+        //     &Token::Semicolon,
+        //     /* allow_trailing_sep */ false,
+        //     /* min_sep_occur */ 0,
+        // )?;
+
+        // let span_end = self.get_curr_span().start;
+        // let span = span_start..span_end;
+        // match spanned_kcmds.len() {
+        //     0 => Err(
+        //         self.build_error(span, "faild to find a command".to_string(), || {
+        //             "parse a command".to_string()
+        //         }),
+        //     ), // empty list is invalid
+        //     1 => Ok(spanned_kcmds.into_iter().next().unwrap()), // just one command → no wrapping
+        //     _ => {
+        //         let start = spanned_kcmds.first().unwrap().1.start;
+        //         let end = spanned_kcmds.last().unwrap().1.end;
+        //         Ok((KCmd::Sequence(spanned_kcmds), start..end))
+        //     }
+        // }
     }
 }

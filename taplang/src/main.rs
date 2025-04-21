@@ -36,7 +36,6 @@ fn main() {
 
     let mut par = Parser::new(&src, &sanitized_toks);
 
-
     let start = std::time::Instant::now();
     let cmd = par.parse_command();
     println!("Parsed in {:?}", start.elapsed());
@@ -46,10 +45,12 @@ fn main() {
             if par.pos >= sanitized_toks.len() {
                 println!("AST: {:?}", file_ast.1)
             } else {
-                println!("parsing ended abruptly. exited early to recover fragment:\n{:?}", file_ast.1)
+                println!(
+                    "parsing ended abruptly. exited early to recover fragment:\n{:?}",
+                    file_ast.1
+                )
             }
-            
-        },
+        }
         Err(e) => e.msg(),
     }
 

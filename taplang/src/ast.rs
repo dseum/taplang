@@ -161,21 +161,30 @@ pub enum Cmd<T> {
     Skip,
     Scope(Box<Spanned<Self>>),
     Assign(Box<Spanned<Lhs<T>>>, Box<Spanned<Expr<T>>>),
-    Sequence(Box<Spanned<Self>>, Box<Spanned<Self>>),
+    Sequence(Vec<Spanned<Self>>),
     Let(Spanned<String>, Box<Spanned<Type>>, Box<Spanned<Expr<T>>>),
     LetMut(Spanned<String>, Box<Spanned<Type>>, Box<Spanned<Expr<T>>>),
     While(Box<Spanned<Expr<T>>>, Box<Spanned<Self>>),
-    If(Box<Spanned<Expr<T>>>, Box<Spanned<Self>>, Box<Spanned<Self>>),
+    If(
+        Box<Spanned<Expr<T>>>,
+        Box<Spanned<Self>>,
+        Box<Spanned<Self>>,
+    ),
 }
+
 #[derive(Debug, Clone)]
 pub enum KCmd<T> {
     Skip,
     Scope(Box<Spanned<Self>>),
     Assign(Box<Spanned<Lhs<T>>>, Box<Spanned<KExpr<T>>>),
-    Sequence(Box<Spanned<Self>>, Box<Spanned<Self>>),
+    Sequence(Vec<Spanned<Self>>),
     Let(Spanned<String>, Box<Spanned<Type>>, Box<Spanned<KExpr<T>>>),
     LetMut(Spanned<String>, Box<Spanned<Type>>, Box<Spanned<KExpr<T>>>),
     While(Box<Spanned<Expr<T>>>, Box<Spanned<Self>>),
-    If(Box<Spanned<Expr<T>>>, Box<Spanned<Self>>, Box<Spanned<Self>>),
+    If(
+        Box<Spanned<Expr<T>>>,
+        Box<Spanned<Self>>,
+        Box<Spanned<Self>>,
+    ),
     Lemma(Box<Spanned<HeapPred>>),
 }
